@@ -3,7 +3,7 @@ MarkerClusterGroup
 
 Provides beautiful marker clustering functionality for Google Maps API v3.
 
-This Project is a port of the awesome [Leaflet.markercluster](http://leaflet.github.com/Leaflet.markercluster/). MUCH THANKS!
+This Project is a port of the awesome [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster). MUCH THANKS!
 Sadly it is not as slick and beautiful (no animations) as Leaflet.markercluster, due to some issues with google maps and not enough of my time.
 
 This is a very first version and has a long way to go.
@@ -29,5 +29,5 @@ clusterer.setMap(gmap);
 
 ### Examples Usage
 
-The [realworld example](http://avalith.github.com/MarkerClusterGroup/examples/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.
+The [realworld example](https://avalith.github.io/MarkerClusterGroup/examples/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.
 
