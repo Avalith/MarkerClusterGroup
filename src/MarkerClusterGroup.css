@@ -1,0 +1,56 @@
+.cluster { position: absolute; padding: 5px; font-size: 12px; text-align: center; border-radius: 100px; box-sizing: border-box; cursor: pointer; }
+.cluster .cluster-count { width: 100%; height:100%; border-radius: 100px; box-sizing: border-box; }
+
+.cluster.cluster-size-1					{ background-color: rgba(110, 200, 50, .3); width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+.cluster.cluster-size-1 .cluster-count	{ background-color: rgba(110, 200, 50, .6); line-height: 20px; }
+
+.cluster.cluster-size-2					{ background-color: rgba(240, 190, 10, .3); width: 34px; height: 34px; margin: -17px 0 0 -17px; }
+.cluster.cluster-size-2 .cluster-count	{ background-color: rgba(240, 190, 10, .6); line-height: 24px; }
+
+.cluster.cluster-size-3					{ background-color: rgba(250, 130, 70, .3); width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+.cluster.cluster-size-3 .cluster-count	{ background-color: rgba(250, 130, 70, .6); line-height: 30px; }
+
+.cluster.cluster-size-4					{ background-color: rgba(250, 60, 60, .3); width: 46px; height: 46px; margin: -23px 0 0 -23px; }
+.cluster.cluster-size-4 .cluster-count	{ background-color: rgba(250, 60, 60, .7); line-height: 36px; }
+
+.cluster.cluster-size-5					{ background-color: rgba(250, 60, 60, .3); width: 50px; height: 50px; margin: -25px 0 0 -25px; }
+.cluster.cluster-size-5 .cluster-count	{ background-color: rgba(250, 60, 60, .7); line-height: 40px; }
+
+.cluster.cluster-size-6					{ background-color: rgba(250, 60, 60, .3); width: 50px; height: 50px; margin: -25px 0 0 -25px; font-size: 11px; letter-spacing: -1px; }
+.cluster.cluster-size-6 .cluster-count	{ background-color: rgba(250, 60, 60, .7); line-height: 40px; }
+
+.cluster.cluster-size-7					{ background-color: rgba(250, 60, 60, .6); font-size: 9px; }
+.cluster.cluster-size-7 .cluster-count	{ background-color: rgba(250, 60, 60, .7); line-height: 40px; }
+
+
+#g-progress {
+	display: none;
+	position: absolute;
+	z-index: 1000;
+	right: 400px;
+	top: 300px;
+	width: 200px;
+	height: 20px;
+	margin-top: -20px;
+	margin-right: -100px;
+	background-color: #fff;
+	background-color: rgba(255, 255, 255, 0.7);
+	border-radius: 4px;
+	padding: 2px;
+}
+
+#g-progress-bar {
+	width: 0;
+	height: 100%;
+	background-color: #76A6FC;
+	border-radius: 4px;
+}
+
+
+.cluster-anim .cluster
+{
+	-webkit-transition	: opacity 0.3s ease-in, -webkit-transform	0.3s ease-out;
+	-moz-transition		: opacity 0.3s ease-in, -moz-transform		0.3s ease-out;
+	-o-transition		: opacity 0.3s ease-in, -o-transform		0.3s ease-out;
+	transition			: opacity 0.3s ease-in, transform			0.3s ease-out;
+}
