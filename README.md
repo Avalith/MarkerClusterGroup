@@ -29,5 +29,5 @@ clusterer.setMap(gmap);
 
 ### Examples Usage
 
-The [realworld example](https://avalith.github.io/MarkerClusterGroup/examples/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.
+The [realworld example](http://avalith.github.io/MarkerClusterGroup/examples/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.
 
