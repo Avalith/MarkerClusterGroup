@@ -439,19 +439,21 @@
 		// 	}
 		// });
 	
-		return this;
+		// return this;
 	};
 	
 	MAP.MarkerClusterGroup.prototype.clearLayers = function()
 	{
 		//If we aren't on the map (yet), blow away the markers we know of
-		if (!this.map) {
+		if(!this.map)
+		{
 			this._needsClustering = [];
 			delete this._gridClusters;
 			delete this._gridUnclustered;
 		}
 		
-		if (this._noanimationUnspiderfy) {
+		if(this._noanimationUnspiderfy)
+		{
 			this._noanimationUnspiderfy();
 		}
 		
@@ -459,10 +461,11 @@
 		this._featureGroup.clearLayers();
 		// this._nonPointGroup.clearLayers();
 		
-		this.eachLayer(function(marker)
+		var markers = this._topClusterLevel.getAllChildMarkers();
+		for(i = markers.length - 1; i >= 0; i--)
 		{
-			delete marker.__parent;
-		});
+			delete markers[i].__parent;
+		}
 		
 		if(this.map)
 		{
@@ -470,7 +473,7 @@
 			this._generateInitialClusters();
 		}
 		
-		return this;
+		// return this;
 	};
 	
 	

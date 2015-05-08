@@ -23,7 +23,7 @@
 		
 		if(a){ this._addChild(a); }
 		if(b){ this._addChild(b); }
-	}
+	};
 	
 	MAP.MarkerCluster.prototype = new GM.OverlayView();
 	
