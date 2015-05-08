@@ -530,10 +530,14 @@ MAP.extend = function(obj1, obj2)
 		this._featureGroup.clearLayers();
 		// this._nonPointGroup.clearLayers();
 		
-		var markers = this._topClusterLevel.getAllChildMarkers();
-		for(i = markers.length - 1; i >= 0; i--)
+		
+		if(this._topClusterLevel)
 		{
-			delete  markers[i].__parent;
+			var markers = this._topClusterLevel.getAllChildMarkers();
+			for(i = markers.length - 1; i >= 0; i--)
+			{
+				delete markers[i].__parent;
+			}
 		}
 		
 		if(this.map)
@@ -1133,7 +1137,7 @@ MAP.extend = function(obj1, obj2)
 		
 		if(a){ this._addChild(a); }
 		if(b){ this._addChild(b); }
-	}
+	};
 	
 	MAP.MarkerCluster.prototype = new GM.OverlayView();
 	

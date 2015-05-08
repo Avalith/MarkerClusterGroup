@@ -461,10 +461,14 @@
 		this._featureGroup.clearLayers();
 		// this._nonPointGroup.clearLayers();
 		
-		var markers = this._topClusterLevel.getAllChildMarkers();
-		for(i = markers.length - 1; i >= 0; i--)
+		
+		if(this._topClusterLevel)
 		{
-			delete markers[i].__parent;
+			var markers = this._topClusterLevel.getAllChildMarkers();
+			for(i = markers.length - 1; i >= 0; i--)
+			{
+				delete markers[i].__parent;
+			}
 		}
 		
 		if(this.map)
