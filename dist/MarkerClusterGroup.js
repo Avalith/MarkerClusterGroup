@@ -115,8 +115,6 @@ MAP.extend = function(obj1, obj2)
 					i--;
 				}
 			}
-			
-			console.log(this.layers);
 		};
 		
 		this.clearLayers = function(cb)

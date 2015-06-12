@@ -47,8 +47,6 @@
 					i--;
 				}
 			}
-			
-			console.log(this.layers);
 		};
 		
 		this.clearLayers = function(cb)
