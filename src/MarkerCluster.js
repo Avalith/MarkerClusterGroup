@@ -310,6 +310,8 @@
 		,	clusters	= this._childClusters
 		;
 		
+		if(markers.length === 0 && clusters.length === 0){ return; }
+		
 		for(i = clusters.length - 1; i >= 0; i--)
 		{
 			clusters[i]._recalculateBounds();

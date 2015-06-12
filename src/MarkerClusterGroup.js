@@ -35,7 +35,20 @@
 		this.eachLayer = function(cb)
 		{
 			// console.log(this.layers);
-			for(var i = 0; i < this.layers.length; i++){ cb(this.layers[i]); }
+			for(var v, i = 0; i < this.layers.length; i++)
+			{
+				if(v = this.layers[i])
+				{
+					cb(v);
+				}
+				else
+				{
+					this.layers.splice(i, 1);
+					i--;
+				}
+			}
+			
+			console.log(this.layers);
 		};
 		
 		this.clearLayers = function(cb)
@@ -618,11 +631,11 @@
 					if(!dontUpdateMap){ fg.addLayer(otherMarker); }
 				}
 			}
-			else
-			{
-				// cluster._recalculateBounds();
-				// if(!dontUpdateMap || !cluster._icon){ cluster._updateIcon(); }
-			}
+			// else
+			// {
+			// 	// cluster._recalculateBounds();
+			// 	// if(!dontUpdateMap || !cluster._icon){ cluster._updateIcon(); }
+			// }
 			
 			cluster = cluster.__parent;
 		}
