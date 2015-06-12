@@ -51,7 +51,7 @@
 	
 	<div id="progress"><div id="progress-bar"></div></div>
 	<div id="map" style="float: left; height: 450px;"></div>
-	<script type="text/javascript">
+	<!--script type="text/javascript">
 		
 		var	latlng = L.latLng(-37.82, 175.24); // 388
 		// var	latlng = L.latLng(-37.89, 175.46); // 10000
@@ -99,7 +99,7 @@
 		
 		
 		map.addLayer(Lclusterer);
-	</script>
+	</script -->
 	
 	
 	
@@ -145,12 +145,12 @@
 		
 		
 		
-		var clusterer	= new MAP.MarkerClusterGroup({ chunkedLoading: true, chunkProgress: g_updateProgressBar });
+		var clusterer	= new MAP.MarkerClusterGroup({ /*chunkedLoading: true, chunkProgress: g_updateProgressBar*/ });
 		
-		markers = [];
 		GMM = google.maps.Marker;
 		GLL = google.maps.LatLng;
 		
+		markers = [];
 		for(var m, a, i = 0; i < (0 || addressPoints.length); i++)
 		{
 			a = addressPoints[i];
@@ -165,17 +165,46 @@
 			markers.push(m);
 		}
 		
+		markers2 = [];
+		for(var m, a, i = 0; i < (0 || addressPoints.length); i+=2)
+		{
+			a = addressPoints[i];
+			m = new GMM();
+			
+			m.__id = i;
+			m.title = a[2];
+			
+			m.set('position', new GLL(a[0], a[1]));
+			// m.set('optimized', false)
+			
+			markers2.push(m);
+		}
+		
 		// gmap.setCenter(m.position);
 		// gmap.setZoom(18)
 		
-		// setTimeout(function(){ console.profile(); setTimeout(function()
-		// {
+		setTimeout(function(){ console.profile(); setTimeout(function()
+		{
 			clusterer.addLayers(markers);
 			
 			clusterer.setMap(gmap);
 			
-		// 	setTimeout(function(){ console.profileEnd(); }, 2000)
-		// }, 100); }, 500);
+			clusterer.addLayers(markers2);
+			
+			setTimeout(function()
+			{
+				console.profileEnd();
+				
+				setTimeout(function(){ console.profile(); setTimeout(function()
+				{
+					clusterer.addLayers(markers2);
+					
+					setTimeout(function(){ console.profileEnd(); }, 2000)
+				}, 100); }, 500);
+				
+			
+			}, 2000)
+		}, 100); }, 500);
 		
 		// q = [];
 		// for(var i = 0; i < (0 || addressPoints.length); i++)

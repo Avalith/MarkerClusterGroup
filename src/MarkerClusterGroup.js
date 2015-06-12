@@ -322,13 +322,13 @@
 		if(this._topClusterLevel)
 		{
 			// console.log('has map, layers: ' + layersArray.length);
-			var offset = 0, started = (new Date()).getTime();
+			var offset = 0, length = layersArray.length, started = (new Date()).getTime();
 			
 			var process = MAP.bind(function()
 			{
 				var start = (new Date()).getTime();
 				
-				for(; offset < layersArray.length; offset++)
+				for(; offset < length; offset++)
 				{
 					if(chunked && offset % 250 === 0)
 					{
@@ -338,16 +338,7 @@
 					}
 					
 					m = layersArray[offset];
-					MAP.stamp(m)
-					
-					//Not point data, can't be clustered
-					// if(!m.getPosition)
-					// {
-					// 	npg.addLayer(m);
-					// 	continue;
-					// }
-					
-					// console.log(this.hasLayer(m), this._needsClustering);
+					MAP.stamp(m);
 					
 					if(this.hasLayer(m)){ continue; }
 					
@@ -361,19 +352,37 @@
 					}
 				}
 				
+				
+				
 				if(chunkProgress){ chunkProgress(offset, layersArray.length, (new Date()).getTime() - started); }
 				
 				if(offset === layersArray.length)
 				{
-					// alert('markers loaded for' + ( (new Date).getTime() - started ) + 'ms');
+					// for(offset = 0; offset < length; offset++)
+					// {
+					// 	m = layersArray[offset];
+					// 	if(m.__parent && m.__parent !== this._topClusterLevel)
+					// 	{
+					// 		// TODO	May be trigger partial recalc not full (must think)
+					// 		// 		_iconNeedsRecalc = might be a [] only holding new elements?
+							
+					// 		m.__parent._recalculateBounds();
+					// 	}
+					// }
+					
+					
 					this._topClusterLevel._recalculateBounds();
 					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
+					
+					
 					
 					// Update the icons of all those visible clusters that were affected
 					fg.eachLayer(function(c)
 					{
 						if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); }
 					});
+					
+					// TODO Trigger Done Event
 				}
 				else
 				{
@@ -600,7 +609,7 @@
 			markers.splice(i, 1);
 			delete markers_i[s];
 			
-			for(s in markers_i){ if(markers_i[s] > i) markers_i[s]--; }
+			for(var x in markers_i){ if(markers_i[x] > i) markers_i[x]--; }
 		}
 		
 		while(cluster && cluster._zoom >= 0)
