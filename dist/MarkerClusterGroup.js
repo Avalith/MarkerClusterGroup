@@ -53,8 +53,7 @@ MAP.TRANSITIONS = false;
 
 MAP.stamp = function(obj)
 {
-	obj.__stamp_id = obj.__stamp_id || ++MAP.stamp.last_id;
-	return obj.__stamp_id;
+	return (obj.__stamp_id = '__stamp_id' in obj ? obj.__stamp_id : ++MAP.stamp.last_id);
 };
 MAP.stamp.last_id = 0;
 
@@ -69,7 +68,6 @@ MAP.extend = function(obj1, obj2)
 
 (function()
 {
-	
 	var	GM = google.maps
 	,	GE = GM.event
 	;
@@ -79,19 +77,27 @@ MAP.extend = function(obj1, obj2)
 	{
 		this.map = null;
 		this.layers = [];
+		this.layers_i = {};
+		
 		this.addLayer = function(layer)
 		{
 			if(!this.map){ return; }
 			
-			this.layers.push(layer);
-			// console.log(layer);
+			this.layers_i[layer.__stamp_id] = this.layers.push(layer) - 1;
+			
 			layer.setMap(this.map);
 		};
 		
 		this.removeLayer = function(layer)
 		{
-			var i = this.layers.indexOf(layer);
-			if(i > -1){ this.layers.splice(i, 1)[0].setMap(null); }
+			var s = layer.__stamp_id, i = this.layers_i[s];
+			
+			if(i)
+			{
+				this.layers[i].setMap(null);
+				delete this.layers_i[s];
+				delete this.layers[i];
+			}
 		};
 		
 		this.eachLayer = function(cb)
@@ -104,6 +110,7 @@ MAP.extend = function(obj1, obj2)
 		{
 			for(var i = 0; i < this.layers.length; i++){ this.layers[i].setMap(null); }
 			this.layers = [];
+			this.layers_i = {};
 		};
 	}
 	
@@ -114,7 +121,9 @@ MAP.extend = function(obj1, obj2)
 		
 		this._inZoomAnimation	= 0;
 		this._needsClustering	= [];
+		this._needsClustering_i	= {};
 		this._needsRemoving		= [];
+		this._needsRemoving_i	= {};
 		
 		this.options = MAP.extend(
 		{
@@ -207,6 +216,8 @@ MAP.extend = function(obj1, obj2)
 		// 	this._removeLayer(layer, true);
 		// }
 		this._needsRemoving = [];
+		this._needsRemoving_i = {};
+		
 		
 		// Remember the current zoom level and bounds
 		this._zoom = this.map.getZoom();
@@ -218,9 +229,10 @@ MAP.extend = function(obj1, obj2)
 		this._bindEvents();
 		
 		// Actually add our markers to the map:
-		l = this._needsClustering;
+		var layers = this._needsClustering;
 		this._needsClustering = [];
-		this.addLayers(l);
+		this._needsClustering_i = {};
+		this.addLayers(layers);
 	};
 	
 	MAP.MarkerClusterGroup.prototype.onRemove = function(map)
@@ -244,28 +256,17 @@ MAP.extend = function(obj1, obj2)
 	
 	MAP.MarkerClusterGroup.prototype.hasLayer = function(layer)
 	{
-		// TODO Refactor this in a single return
 		if(!layer){ return false; }
 		
 		if(layer.__parent && layer.__parent._group === this) return true;
 		
-		if(this._needsClustering.indexOf(layer) > -1){ return true; }
-		// var i, anArray = this._needsClustering;
-		// for(i = anArray.length - 1; i >= 0; i--) {
-		// 	if (anArray[i] === layer) {
-		// 		return true;
-		// 	}
-		// }
+		// console.log(this._needsClustering_i);
+		if(layer.__stamp_id in this._needsClustering_i){ return true; }
+		if(layer.__stamp_id in this._needsRemoving_i){ return false; }
 		
-		if(this._needsRemoving.indexOf(layer) > -1){ return false; }
-		// anArray = this._needsRemoving;
-		// for (i = anArray.length - 1; i >= 0; i--) {
-		// 	if (anArray[i] === layer) {
-		// 		return false;
-		// 	}
-		// }
+		// return !!(layer.__parent && layer.__parent._group === this); // || this._nonPointGroup.hasLayer(layer);
 		
-		return !!(layer.__parent && layer.__parent._group === this); // || this._nonPointGroup.hasLayer(layer);
+		return false;
 	};
 	
 	MAP.MarkerClusterGroup.prototype.addLayer = function(layer)
@@ -286,7 +287,7 @@ MAP.extend = function(obj1, obj2)
 		
 		if(!this._topClusterLevel)
 		{
-			this._needsClustering.push(layer);
+			this._needsClustering_i[layer.__stamp_id] = this._needsClustering.push(layer) - 1;
 			return; // this;
 		}
 		
@@ -377,7 +378,7 @@ MAP.extend = function(obj1, obj2)
 		
 		if(this._topClusterLevel)
 		{
-			console.log('has map, layers: ' + layersArray.length);
+			// console.log('has map, layers: ' + layersArray.length);
 			var offset = 0, started = (new Date()).getTime();
 			
 			var process = MAP.bind(function()
@@ -394,6 +395,7 @@ MAP.extend = function(obj1, obj2)
 					}
 					
 					m = layersArray[offset];
+					MAP.stamp(m)
 					
 					//Not point data, can't be clustered
 					// if(!m.getPosition)
@@ -421,13 +423,13 @@ MAP.extend = function(obj1, obj2)
 				if(offset === layersArray.length)
 				{
 					// alert('markers loaded for' + ( (new Date).getTime() - started ) + 'ms');
-					
+					this._topClusterLevel._recalculateBounds();
 					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
 					
 					// Update the icons of all those visible clusters that were affected
 					fg.eachLayer(function(c)
 					{
-						if(c instanceof MAP.MarkerCluster && c._iconNeedsUpdate){ c._updateIcon(); }
+						if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); }
 					});
 				}
 				else
@@ -440,25 +442,22 @@ MAP.extend = function(obj1, obj2)
 		}
 		else
 		{
-			console.warn('has no map');
-			
 			newMarkers = [];
+			var length = this._needsClustering.length;
+			
 			for(i = 0, l = layersArray.length; i < l; i++)
 			{
 				m = layersArray[i];
-			// 	//Not point data, can't be clustered
-			// 	if (!m.getLatLng) {
-			// 		npg.addLayer(m);
-			// 		continue;
-			// 	}
+				MAP.stamp(m)
 				
 				if(this.hasLayer(m)){ continue; }
 				
-				newMarkers.push(m);
+				this._needsClustering_i[m.__stamp_id] = length + newMarkers.push(m) - 1;
 			}
 			
 			this._needsClustering = this._needsClustering.concat(newMarkers);
 		}
+		
 		return this;
 	};
 	
@@ -517,6 +516,8 @@ MAP.extend = function(obj1, obj2)
 		if(!this.map)
 		{
 			this._needsClustering = [];
+			this._needsClustering_i = {};
+			
 			delete this._gridClusters;
 			delete this._gridUnclustered;
 		}
@@ -555,7 +556,7 @@ MAP.extend = function(obj1, obj2)
 	// Zoom: Zoom to start adding at (Pass this._maxZoom to start at the bottom)
 	MAP.MarkerClusterGroup.prototype._addLayer = function (layer, zoom)
 	{
-		var	markerPoint, z
+		var	markerPoint, closest, z
 		,	gridClusters	= this._gridClusters
 		,	gridUnclustered	= this._gridUnclustered
 		;
@@ -575,12 +576,10 @@ MAP.extend = function(obj1, obj2)
 		//Find the lowest zoom level to slot this one in
 		for(; zoom >= 0; zoom--)
 		{
-			markerPoint = this.ll2px(layer, layer.getPosition(), zoom); // calculate pixel position
+			markerPoint = this.ll2px(layer, layer.position, zoom); // calculate pixel position
 			
-			//Try find a cluster close by
-			var closest = gridClusters[zoom].getNearObject(markerPoint);
-			// console.log(markerPoint, this.map.zoom);
-			if(closest)
+			// Try find a cluster close by
+			if(closest = gridClusters[zoom].getNearObject(markerPoint))
 			{
 				closest._addChild(layer);
 				layer.__parent = closest;
@@ -589,12 +588,10 @@ MAP.extend = function(obj1, obj2)
 			}
 			
 			//Try find a marker close by to form a new cluster with
-			// console.log(markerPoint);
-			closest = gridUnclustered[zoom].getNearObject(markerPoint);
-			if(closest)
+			if(closest = gridUnclustered[zoom].getNearObject(markerPoint))
 			{
 				var parent = closest.__parent;
-				if (parent){ this._removeLayer(closest, false); }
+				if(parent){ this._removeLayer(closest, false); }
 				
 				//Create new cluster with these 2 in it
 				var newCluster = new MAP.MarkerCluster(this, zoom, closest, layer);
@@ -607,31 +604,26 @@ MAP.extend = function(obj1, obj2)
 				for(z = zoom - 1; z > parent._zoom; z--)
 				{
 					lastParent = new MAP.MarkerCluster(this, z, lastParent);
-					gridClusters[z].addObject(lastParent, this.ll2px(closest, closest.getPosition(), z));
+					gridClusters[z].addObject(lastParent, this.ll2px(closest, closest.position, z));
 				}
 				parent._addChild(lastParent);
 				
 				//Remove closest from this zoom level and any above that it is in, replace with newCluster
 				for(z = zoom; z >= 0; z--)
 				{
-					if(!gridUnclustered[z].removeObject(closest, this.ll2px(closest, closest.getPosition(), z))){ break; }
+					if(!gridUnclustered[z].removeObject(closest, this.ll2px(closest, closest.position, z))){ break; }
 				}
 				
 				return;
 			}
 			
-			//Didn't manage to cluster in at this zoom, record us as a marker here and continue upwards
+			//Didn't manage to cluster in at this zoom, record it as a marker here and continue upwards
 			gridUnclustered[zoom].addObject(layer, markerPoint);
 		}
-		
-		
-		// console.log(this._topClusterLevel, layer);
 		
 		//Didn't get in anything, add us to the top
 		this._topClusterLevel._addChild(layer);
 		layer.__parent = this._topClusterLevel;
-		
-		return;
 	};
 	
 	MAP.MarkerClusterGroup.prototype._removeLayer = function(marker, removeFromDistanceGrid, dontUpdateMap)
@@ -644,40 +636,47 @@ MAP.extend = function(obj1, obj2)
 		//Remove the marker from distance clusters it might be in
 		if(removeFromDistanceGrid)
 		{
-			for (var z = this._maxZoom; z >= 0; z--)
+			for(var z = this._maxZoom; z >= 0; z--)
 			{
-				if(!gridUnclustered[z].removeObject(marker, this.ll2px(marker, marker.getPosition(), z))){ break; }
+				if(!gridUnclustered[z].removeObject(marker, this.ll2px(marker, marker.position, z))){ break; }
 			}
 		}
 		
 		//Work our way up the clusters removing them as we go if required
-		var cluster	= marker.__parent,
-			markers	= cluster._markers,
-			i, otherMarker
+		var	i, otherMarker
+		,	cluster		= marker.__parent
+		,	markers		= cluster._markers
+		,	markers_i	= cluster._markers_i
+		,	s			= marker.__stamp_id
 		;
 		
 		//Remove the marker from the immediate parents marker list
 		// this._arraySplice(markers, marker);
-		if((i = markers.indexOf(marker)) > -1){ markers.splice(i, 1); }
+		if((i = markers_i[s]) > -1)
+		{
+			markers.splice(i, 1);
+			delete markers_i[s];
+			
+			for(s in markers_i){ if(markers_i[s] > i) markers_i[s]--; }
+		}
 		
-		while (cluster)
+		while(cluster && cluster._zoom >= 0)
 		{
 			cluster._childCount--;
 			
-			//Top level, do nothing
-			if(cluster._zoom < 0){ break; }
-			else if(removeFromDistanceGrid && cluster._childCount <= 1) //Cluster no longer required
+			if(removeFromDistanceGrid && cluster._childCount <= 1) //Cluster no longer required
 			{
 				//We need to push the other marker up to the parent
 				otherMarker = cluster._markers[0] === marker ? cluster._markers[1] : cluster._markers[0];
 				
 				//Update distance grid
 				gridClusters[cluster._zoom].removeObject(cluster, this.ll2px(cluster, cluster._cPosition, cluster._zoom));
-				gridUnclustered[cluster._zoom].addObject(otherMarker, this.ll2px(otherMarker, otherMarker.getPosition(), cluster._zoom));
+				gridUnclustered[cluster._zoom].addObject(otherMarker, this.ll2px(otherMarker, otherMarker.position, cluster._zoom));
 				
 				//Move otherMarker up to parent
-				this._arraySplice(cluster.__parent._childClusters, cluster);
-				cluster.__parent._markers.push(otherMarker);
+				// this._arraySplice(cluster.__parent._childClusters, cluster);
+				if((i = cluster.__parent._childClusters.indexOf(cluster)) > -1){ cluster.__parent._childClusters.splice(i, 1); }
+				cluster.__parent._markers_i[otherMarker.__stamp_id] = cluster.__parent._markers.push(otherMarker) - 1;
 				otherMarker.__parent = cluster.__parent;
 				
 				if(cluster._icon)
@@ -689,7 +688,7 @@ MAP.extend = function(obj1, obj2)
 			}
 			else
 			{
-				cluster._recalculateBounds();
+				// cluster._recalculateBounds();
 				// if(!dontUpdateMap || !cluster._icon){ cluster._updateIcon(); }
 			}
 			
@@ -869,7 +868,7 @@ MAP.extend = function(obj1, obj2)
 		{
 			if(bounds.contains(layers[i].position))
 			{
-				fingerprint.push(MAP.stamp(layers[i]));
+				fingerprint.push(layers[i].__stamp_id);
 			}
 		}
 		
@@ -968,7 +967,7 @@ MAP.extend = function(obj1, obj2)
 			// TODO Maybe? Update markers in _recursivelyBecomeVisible
 			fg.eachLayer(function(n)
 			{
-				if(!(n instanceof MAP.MarkerCluster) && n.map){ n.setOpacity(1); }
+				if(!n._is_cluster && n.map){ n.setOpacity(1); }
 			});
 			
 			// update the positions of the just added clusters/markers
@@ -1046,7 +1045,7 @@ MAP.extend = function(obj1, obj2)
 					// this._forceLayout();
 					this._animationStart();
 					
-					layer.setPosition(this.getProjection().fromLatLngToDivPixel(newCluster.getPosition()));
+					layer.setPosition(this.getProjection().fromLatLngToDivPixel(newCluster.position));
 					layer.setOpacity(0);
 					
 					this._enqueue(function()
@@ -1120,13 +1119,18 @@ MAP.extend = function(obj1, obj2)
 	
 	MAP.MarkerCluster = function(group, zoom, a, b)
 	{
+		this._is_cluster = true;
+		MAP.stamp(this)
+		
 		// extend(MarkerCluster, GM.OverlayView);
 		
 		this._group				= group;
 		this._zoom				= zoom;
 		
 		this._markers			= [];
+		this._markers_i			= {};
 		this._childClusters		= [];
+		this._childClusters_i	= {};
 		this._childCount		= 0;
 		this._iconNeedsUpdate	= true;
 		
@@ -1135,7 +1139,7 @@ MAP.extend = function(obj1, obj2)
 		this._div				= null;
 		this._div_count			= null;
 		
-		if(a){ this._addChild(a); }
+		if(a){ this._addChild(a); this.setPosition(this._cPosition = this._wPosition = a.position); }
 		if(b){ this._addChild(b); }
 	};
 	
@@ -1198,13 +1202,13 @@ MAP.extend = function(obj1, obj2)
 	MAP.MarkerCluster.prototype._addChild = function(new1, isNotificationFromChild)
 	{
 		this._iconNeedsUpdate = true;
-		this._expandBounds(new1);
+		// this._expandBounds(new1, isNotificationFromChild);
 		
-		if(new1 instanceof MAP.MarkerCluster)
+		if(new1._is_cluster)
 		{
 			if(!isNotificationFromChild)
 			{
-				this._childClusters.push(new1);
+				this._childClusters_i[new1.__stamp_id] = this._childClusters.push(new1) - 1;
 				new1.__parent = this;
 			}
 			
@@ -1214,8 +1218,9 @@ MAP.extend = function(obj1, obj2)
 		{
 			if(!isNotificationFromChild)
 			{
-				this._markers.push(new1);
+				this._markers_i[new1.__stamp_id] = this._markers.push(new1) - 1;
 			}
+			
 			this._childCount++;
 		}
 		
@@ -1228,7 +1233,7 @@ MAP.extend = function(obj1, obj2)
 		var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
 		
 		// console.log(marker, addedPosition);
-		if(marker instanceof MAP.MarkerCluster)
+		if(marker._is_cluster)
 		{
 			// console.info(this._bounds, marker._bounds);
 			this._bounds.union(marker._bounds);
@@ -1259,8 +1264,7 @@ MAP.extend = function(obj1, obj2)
 			addedPosition = new GM.LatLng(lat, lng);
 		}
 		
-		// TODO may need to be setPosition
-		this.setPosition(this._wPosition = new GM.LatLng(addedPosition.lat(), addedPosition.lng()));
+		this.setPosition(this._wPosition = addedPosition);
 	};
 	
 	// This is not needed
@@ -1268,14 +1272,14 @@ MAP.extend = function(obj1, obj2)
 	
 	MAP.MarkerCluster.prototype.getAllChildMarkers = function()
 	{
-		storageArray = this._markers.slice();
+		var i, storageArray = this._markers.slice();
 		
 		// for(var j = this._markers.length - 1; j >= 0; j--)
 		// {
 		// 	storageArray.push(this._markers[j]);
 		// }
 		
-		for(var i = this._childClusters.length - 1; i >= 0; i--)
+		for(i = this._childClusters.length - 1; i >= 0; i--)
 		{
 			storageArray.concat(this._childClusters[i].getAllChildMarkers(storageArray));
 		}
@@ -1414,15 +1418,71 @@ MAP.extend = function(obj1, obj2)
 	
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
 	{
-		var markers = this._markers,
-			childClusters = this._childClusters,
-			i;
+		var i, x, sw, ne
+		,	markers		= this._markers
+		,	clusters	= this._childClusters
+		;
 		
-		this._bounds = new GM.LatLngBounds();
-		delete this._wPosition;
+		for(i = clusters.length - 1; i >= 0; i--)
+		{
+			clusters[i]._recalculateBounds();
+		}
 		
-		for(i = markers.length - 1; i >= 0; i--){ this._expandBounds(markers[i]); }
-		for(i = childClusters.length - 1; i >= 0; i--){ this._expandBounds(childClusters[i]); }
+		var m		= (markers[0] || clusters[0]).position
+		,	min_lat = m.lat()
+		,	min_lng = m.lng()
+		,	max_lat = m.lat()
+		,	max_lng = m.lng()
+		,	avg_lat = 0
+		,	avg_lng = 0
+		,	avg_cnt	= markers.length
+		;
+		
+		this._cPosition = this._wPosition = m;
+		
+		for(i = markers.length - 1; i >= 0; i--)
+		{
+			m = markers[i].position;
+			
+			x = m.lat();
+			avg_lat += x;
+			if(x < min_lat){ min_lat = x; } else if(x > max_lat){ max_lat = x; }
+			
+			x = m.lng();
+			avg_lng += x;
+			if(x < min_lng){ min_lng = x; } else if(x > max_lng){ max_lng = x; }
+		}
+		
+		for(i = clusters.length - 1; i >= 0; i--)
+		{
+			m = clusters[i];
+			
+			x = m._wPosition;
+			avg_cnt += m._childCount;
+			avg_lat += x.lat() * m._childCount;
+			avg_lng += x.lng() * m._childCount;
+			
+			m = m._bounds;
+			sw = m.getSouthWest();
+			ne = m.getNorthEast();
+			x = sw.lat(); if(x < min_lat){ min_lat = x; }
+			x = sw.lng(); if(x < min_lng){ min_lng = x; }
+			x = ne.lat(); if(x > max_lat){ max_lat = x; }
+			x = ne.lng(); if(x > max_lng){ max_lng = x; }
+		}
+		
+		this._bounds = new GM.LatLngBounds(new GM.LatLng(min_lat, min_lng), new GM.LatLng(max_lat, max_lng));
+		
+		if(avg_cnt)
+		{
+			// console.log(avg_cnt, avg_lat/avg_cnt, this._wPosition.lat(), avg_lng/avg_cnt, this._wPosition.lng());
+			this.setPosition(this._wPosition = new GM.LatLng(avg_lat/avg_cnt, avg_lng/avg_cnt));
+		}
+		else
+		{
+			// console.log(avg_cnt, avg_lat, this._wPosition.lat(), avg_lng, this._wPosition.lng());
+			this.setPosition(this._wPosition = new GM.LatLng(avg_lat, avg_lng));
+		}
 	};
 	
 	
@@ -1618,9 +1678,6 @@ MAP.extend = function(obj1, obj2)
 	}
 }());
 
-
-
-
 MAP.DistanceGrid = function(cellSize)
 {
 	this._cellSize		= cellSize;
@@ -1631,76 +1688,83 @@ MAP.DistanceGrid = function(cellSize)
 
 MAP.DistanceGrid.prototype.addObject = function(obj, point)
 {
-	var	p		= this._getCoords(point)
+	var	row, cell
+	,	p		= this._getCoords(point)
+	,	_x		= p._x
+	,	_y		= p._y
 	,	grid	= this._grid
-	,	row		= grid[p._y]	= grid[p._y]	|| {}
-	,	cell	= row[p._x]		= row[p._x]		|| []
 	;
 	
-	this._objectPoint[MAP.stamp(obj)] = point;
+	if(_y in grid)
+	{
+		row = grid[_y];
+		cell = _x in row ? row[_x] : (row[_x] = []);
+	}
+	else
+	{
+		row = grid[_y] = {};
+		cell = row[_x] = [];
+	}
+	
+	point._cell = cell;
+	this._objectPoint[obj.__stamp_id] = point;
 	
 	cell.push(obj);
 };
 
-MAP.DistanceGrid.prototype.updateObject = function(obj, point)
-{
-	this.removeObject(obj);
-	this.addObject(obj, point);
-};
+// MAP.DistanceGrid.prototype.updateObject = function(obj, point)
+// {
+// 	this.removeObject(obj);
+// 	this.addObject(obj, point);
+// };
 
 //Returns true if the object was found
 MAP.DistanceGrid.prototype.removeObject = function(obj, point)
 {
-	var	i
-	,	p		= this._getCoords(point)
-	,	grid	= this._grid
-	,	row		= grid[p._y]	= grid[p._y]	|| {}
-	,	cell	= row[p._x]		= row[p._x]		|| []
-	;
+	if(!('_cell' in point)){ return; }
 	
-	delete this._objectPoint[MAP.stamp(obj)];
+	var	i, cell = point._cell;
 	
-	i = cell.indexOf(obj);
-	if(i > -1)
-	// for(i = 0, len = cell.length; i < len; i++)
+	// console.log(this._objectPoint[obj.__stamp_id]);
+	
+	if((i = cell.indexOf(obj)) > -1)
 	{
-		// if(cell[i] === obj){
+		delete this._objectPoint[obj.__stamp_id];
+		delete point._cell;
+		
 		cell.splice(i, 1);
 		
 		if(cell.length === 1)
 		{
-			delete row[p._x];
+			delete this._grid[point._y];
 		}
 		
 		return true;
-		// }
 	}
 };
 
-MAP.DistanceGrid.prototype.getNearObject = function (point)
+MAP.DistanceGrid.prototype.getNearObject = function(point)
 {
 	var i, j, k, row, cell, len, obj, dist
 	,	p				= this._getCoords(point)
 	,	objectPoint		= this._objectPoint
 	,	closestDistSq	= this._sqCellSize
+	,	grid			= this._grid
 	,	closest			= null
 	;
 	
-	// TODO this should help increase performance a little bit and it should not matter a lot for the clusters
-	// if((row = this._grid[p._y]) && (cell = row[p._x]) && cell[0]){ return cell[0] }
-	
-	for(i = p._y - 1; i <= p._y + 1; i++)
+	for(i = -1; i <= 1; i++)
 	{
-		if(row = this._grid[i])
+		if(row = grid[p._y + i])
 		{
-			for(j = p._x - 1; j <= p._x + 1; j++)
+			for(j = -1; j <= 1; j++)
 			{
-				if(cell = row[j])
+				if(cell = row[p._x + j])
 				{
 					for(k = 0, len = cell.length; k < len; k++)
 					{
 						obj		= cell[k];
-						dist	= this._sqDist(objectPoint[MAP.stamp(obj)], point);
+						dist	= this._sqDist(objectPoint[obj.__stamp_id], point);
 						if(dist < closestDistSq)
 						{
 							closestDistSq	= dist;
@@ -1726,10 +1790,10 @@ MAP.DistanceGrid.prototype._getCoords = function(point)
 	return point;
 };
 
-MAP.DistanceGrid.prototype._sqDist = function(p, p2)
+MAP.DistanceGrid.prototype._sqDist = function(p1, p2)
 {
-	var	dx = p2.x - p.x
-	,	dy = p2.y - p.y
+	var	dx = p2.x - p1.x
+	,	dy = p2.y - p1.y
 	;
 	return dx * dx + dy * dy;
 };
