@@ -6,13 +6,18 @@
 	
 	MAP.MarkerCluster = function(group, zoom, a, b)
 	{
+		this._is_cluster = true;
+		MAP.stamp(this)
+		
 		// extend(MarkerCluster, GM.OverlayView);
 		
 		this._group				= group;
 		this._zoom				= zoom;
 		
 		this._markers			= [];
+		this._markers_i			= {};
 		this._childClusters		= [];
+		this._childClusters_i	= {};
 		this._childCount		= 0;
 		this._iconNeedsUpdate	= true;
 		
@@ -21,7 +26,7 @@
 		this._div				= null;
 		this._div_count			= null;
 		
-		if(a){ this._addChild(a); }
+		if(a){ this._addChild(a); this.setPosition(this._cPosition = this._wPosition = a.position); }
 		if(b){ this._addChild(b); }
 	};
 	
@@ -84,13 +89,13 @@
 	MAP.MarkerCluster.prototype._addChild = function(new1, isNotificationFromChild)
 	{
 		this._iconNeedsUpdate = true;
-		this._expandBounds(new1);
+		// this._expandBounds(new1, isNotificationFromChild);
 		
-		if(new1 instanceof MAP.MarkerCluster)
+		if(new1._is_cluster)
 		{
 			if(!isNotificationFromChild)
 			{
-				this._childClusters.push(new1);
+				this._childClusters_i[new1.__stamp_id] = this._childClusters.push(new1) - 1;
 				new1.__parent = this;
 			}
 			
@@ -100,8 +105,9 @@
 		{
 			if(!isNotificationFromChild)
 			{
-				this._markers.push(new1);
+				this._markers_i[new1.__stamp_id] = this._markers.push(new1) - 1;
 			}
+			
 			this._childCount++;
 		}
 		
@@ -109,12 +115,12 @@
 	};
 	
 	//Expand our bounds and tell our parent to
-	MAP.MarkerCluster.prototype._expandBounds = function(marker)
+	MAP.MarkerCluster.prototype._expandBounds = function(marker, isNotificationFromChild)
 	{
 		var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
 		
 		// console.log(marker, addedPosition);
-		if(marker instanceof MAP.MarkerCluster)
+		if(marker._is_cluster)
 		{
 			// console.info(this._bounds, marker._bounds);
 			this._bounds.union(marker._bounds);
@@ -145,8 +151,7 @@
 			addedPosition = new GM.LatLng(lat, lng);
 		}
 		
-		// TODO may need to be setPosition
-		this.setPosition(this._wPosition = new GM.LatLng(addedPosition.lat(), addedPosition.lng()));
+		this.setPosition(this._wPosition = addedPosition);
 	};
 	
 	// This is not needed
@@ -154,14 +159,14 @@
 	
 	MAP.MarkerCluster.prototype.getAllChildMarkers = function()
 	{
-		storageArray = this._markers.slice();
+		var i, storageArray = this._markers.slice();
 		
 		// for(var j = this._markers.length - 1; j >= 0; j--)
 		// {
 		// 	storageArray.push(this._markers[j]);
 		// }
 		
-		for(var i = this._childClusters.length - 1; i >= 0; i--)
+		for(i = this._childClusters.length - 1; i >= 0; i--)
 		{
 			storageArray.concat(this._childClusters[i].getAllChildMarkers(storageArray));
 		}
@@ -300,15 +305,71 @@
 	
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
 	{
-		var markers = this._markers,
-			childClusters = this._childClusters,
-			i;
+		var i, x, sw, ne
+		,	markers		= this._markers
+		,	clusters	= this._childClusters
+		;
 		
-		this._bounds = new GM.LatLngBounds();
-		delete this._wPosition;
+		for(i = clusters.length - 1; i >= 0; i--)
+		{
+			clusters[i]._recalculateBounds();
+		}
 		
-		for(i = markers.length - 1; i >= 0; i--){ this._expandBounds(markers[i]); }
-		for(i = childClusters.length - 1; i >= 0; i--){ this._expandBounds(childClusters[i]); }
+		var m		= (markers[0] || clusters[0]).position
+		,	min_lat = m.lat()
+		,	min_lng = m.lng()
+		,	max_lat = m.lat()
+		,	max_lng = m.lng()
+		,	avg_lat = 0
+		,	avg_lng = 0
+		,	avg_cnt	= markers.length
+		;
+		
+		this._cPosition = this._wPosition = m;
+		
+		for(i = markers.length - 1; i >= 0; i--)
+		{
+			m = markers[i].position;
+			
+			x = m.lat();
+			avg_lat += x;
+			if(x < min_lat){ min_lat = x; } else if(x > max_lat){ max_lat = x; }
+			
+			x = m.lng();
+			avg_lng += x;
+			if(x < min_lng){ min_lng = x; } else if(x > max_lng){ max_lng = x; }
+		}
+		
+		for(i = clusters.length - 1; i >= 0; i--)
+		{
+			m = clusters[i];
+			
+			x = m._wPosition;
+			avg_cnt += m._childCount;
+			avg_lat += x.lat() * m._childCount;
+			avg_lng += x.lng() * m._childCount;
+			
+			m = m._bounds;
+			sw = m.getSouthWest();
+			ne = m.getNorthEast();
+			x = sw.lat(); if(x < min_lat){ min_lat = x; }
+			x = sw.lng(); if(x < min_lng){ min_lng = x; }
+			x = ne.lat(); if(x > max_lat){ max_lat = x; }
+			x = ne.lng(); if(x > max_lng){ max_lng = x; }
+		}
+		
+		this._bounds = new GM.LatLngBounds(new GM.LatLng(min_lat, min_lng), new GM.LatLng(max_lat, max_lng));
+		
+		if(avg_cnt)
+		{
+			// console.log(avg_cnt, avg_lat/avg_cnt, this._wPosition.lat(), avg_lng/avg_cnt, this._wPosition.lng());
+			this.setPosition(this._wPosition = new GM.LatLng(avg_lat/avg_cnt, avg_lng/avg_cnt));
+		}
+		else
+		{
+			// console.log(avg_cnt, avg_lat, this._wPosition.lat(), avg_lng, this._wPosition.lng());
+			this.setPosition(this._wPosition = new GM.LatLng(avg_lat, avg_lng));
+		}
 	};
 	
 	

@@ -1,5 +1,3 @@
-
-
 MAP.DistanceGrid = function(cellSize)
 {
 	this._cellSize		= cellSize;
@@ -10,49 +8,58 @@ MAP.DistanceGrid = function(cellSize)
 
 MAP.DistanceGrid.prototype.addObject = function(obj, point)
 {
-	var	p		= this._getCoords(point)
+	var	row, cell
+	,	p		= this._getCoords(point)
+	,	_x		= p._x
+	,	_y		= p._y
 	,	grid	= this._grid
-	,	row		= grid[p._y]	= grid[p._y]	|| {}
-	,	cell	= row[p._x]		= row[p._x]		|| []
 	;
 	
-	this._objectPoint[MAP.stamp(obj)] = point;
+	if(_y in grid)
+	{
+		row = grid[_y];
+		cell = _x in row ? row[_x] : (row[_x] = []);
+	}
+	else
+	{
+		row = grid[_y] = {};
+		cell = row[_x] = [];
+	}
+	
+	point._cell = cell;
+	this._objectPoint[obj.__stamp_id] = point;
 	
 	cell.push(obj);
 };
 
-MAP.DistanceGrid.prototype.updateObject = function(obj, point)
-{
-	this.removeObject(obj);
-	this.addObject(obj, point);
-};
+// MAP.DistanceGrid.prototype.updateObject = function(obj, point)
+// {
+// 	this.removeObject(obj);
+// 	this.addObject(obj, point);
+// };
 
 //Returns true if the object was found
 MAP.DistanceGrid.prototype.removeObject = function(obj, point)
 {
-	var	i
-	,	p		= this._getCoords(point)
-	,	grid	= this._grid
-	,	row		= grid[p._y]	= grid[p._y]	|| {}
-	,	cell	= row[p._x]		= row[p._x]		|| []
-	;
+	if(!('_cell' in point)){ return; }
 	
-	delete this._objectPoint[MAP.stamp(obj)];
+	var	i, cell = point._cell;
 	
-	i = cell.indexOf(obj);
-	if(i > -1)
-	// for(i = 0, len = cell.length; i < len; i++)
+	// console.log(this._objectPoint[obj.__stamp_id]);
+	
+	if((i = cell.indexOf(obj)) > -1)
 	{
-		// if(cell[i] === obj){
+		delete this._objectPoint[obj.__stamp_id];
+		delete point._cell;
+		
 		cell.splice(i, 1);
 		
-		if(cell.length === 1)
+		if(cell.length <= 1)
 		{
-			delete row[p._x];
+			delete this._grid[point._y];
 		}
 		
 		return true;
-		// }
 	}
 };
 
@@ -62,28 +69,28 @@ MAP.DistanceGrid.prototype.getNearObject = function (point)
 	,	p				= this._getCoords(point)
 	,	objectPoint		= this._objectPoint
 	,	closestDistSq	= this._sqCellSize
+	,	grid			= this._grid
 	,	closest			= null
 	;
 	
-	// TODO this should help increase performance a little bit and it should not matter a lot for the clusters
-	// if((row = this._grid[p._y]) && (cell = row[p._x]) && cell[0]){ return cell[0] }
-	
-	for(i = p._y - 1; i <= p._y + 1; i++)
+	for(i = -1; i <= 1; i++)
 	{
-		if(row = this._grid[i])
+		if(row = grid[p._y + i])
 		{
-			for(j = p._x - 1; j <= p._x + 1; j++)
+			for(j = -1; j <= 1; j++)
 			{
-				if(cell = row[j])
+				if(cell = row[p._x + j])
 				{
 					for(k = 0, len = cell.length; k < len; k++)
 					{
 						obj		= cell[k];
-						dist	= this._sqDist(objectPoint[MAP.stamp(obj)], point);
+						dist	= this._sqDist(objectPoint[obj.__stamp_id], point);
 						if(dist < closestDistSq)
 						{
 							closestDistSq	= dist;
 							closest			= obj;
+							
+							// console.log(obj.z, [i, j, k], [closestDistSq])
 						}
 					}
 				}
@@ -105,10 +112,10 @@ MAP.DistanceGrid.prototype._getCoords = function(point)
 	return point;
 };
 
-MAP.DistanceGrid.prototype._sqDist = function(p, p2)
+MAP.DistanceGrid.prototype._sqDist = function(p1, p2)
 {
-	var	dx = p2.x - p.x
-	,	dy = p2.y - p.y
+	var	dx = p2.x - p1.x
+	,	dy = p2.y - p1.y
 	;
 	return dx * dx + dy * dy;
 };

@@ -1,6 +1,5 @@
 (function()
 {
-	
 	var	GM = google.maps
 	,	GE = GM.event
 	;
@@ -10,19 +9,27 @@
 	{
 		this.map = null;
 		this.layers = [];
+		this.layers_i = {};
+		
 		this.addLayer = function(layer)
 		{
 			if(!this.map){ return; }
 			
-			this.layers.push(layer);
-			// console.log(layer);
+			this.layers_i[layer.__stamp_id] = this.layers.push(layer) - 1;
+			
 			layer.setMap(this.map);
 		};
 		
 		this.removeLayer = function(layer)
 		{
-			var i = this.layers.indexOf(layer);
-			if(i > -1){ this.layers.splice(i, 1)[0].setMap(null); }
+			var s = layer.__stamp_id, i = this.layers_i[s];
+			
+			if(i)
+			{
+				this.layers[i].setMap(null);
+				delete this.layers_i[s];
+				delete this.layers[i];
+			}
 		};
 		
 		this.eachLayer = function(cb)
@@ -35,6 +42,7 @@
 		{
 			for(var i = 0; i < this.layers.length; i++){ this.layers[i].setMap(null); }
 			this.layers = [];
+			this.layers_i = {};
 		};
 	}
 	
@@ -45,7 +53,9 @@
 		
 		this._inZoomAnimation	= 0;
 		this._needsClustering	= [];
+		this._needsClustering_i	= {};
 		this._needsRemoving		= [];
+		this._needsRemoving_i	= {};
 		
 		this.options = MAP.extend(
 		{
@@ -138,6 +148,8 @@
 		// 	this._removeLayer(layer, true);
 		// }
 		this._needsRemoving = [];
+		this._needsRemoving_i = {};
+		
 		
 		// Remember the current zoom level and bounds
 		this._zoom = this.map.getZoom();
@@ -149,9 +161,10 @@
 		this._bindEvents();
 		
 		// Actually add our markers to the map:
-		l = this._needsClustering;
+		var layers = this._needsClustering;
 		this._needsClustering = [];
-		this.addLayers(l);
+		this._needsClustering_i = {};
+		this.addLayers(layers);
 	};
 	
 	MAP.MarkerClusterGroup.prototype.onRemove = function(map)
@@ -175,28 +188,17 @@
 	
 	MAP.MarkerClusterGroup.prototype.hasLayer = function(layer)
 	{
-		// TODO Refactor this in a single return
 		if(!layer){ return false; }
 		
 		if(layer.__parent && layer.__parent._group === this) return true;
 		
-		if(this._needsClustering.indexOf(layer) > -1){ return true; }
-		// var i, anArray = this._needsClustering;
-		// for(i = anArray.length - 1; i >= 0; i--) {
-		// 	if (anArray[i] === layer) {
-		// 		return true;
-		// 	}
-		// }
+		// console.log(this._needsClustering_i);
+		if(layer.__stamp_id in this._needsClustering_i){ return true; }
+		if(layer.__stamp_id in this._needsRemoving_i){ return false; }
 		
-		if(this._needsRemoving.indexOf(layer) > -1){ return false; }
-		// anArray = this._needsRemoving;
-		// for (i = anArray.length - 1; i >= 0; i--) {
-		// 	if (anArray[i] === layer) {
-		// 		return false;
-		// 	}
-		// }
+		// return !!(layer.__parent && layer.__parent._group === this); // || this._nonPointGroup.hasLayer(layer);
 		
-		return !!(layer.__parent && layer.__parent._group === this); // || this._nonPointGroup.hasLayer(layer);
+		return false;
 	};
 	
 	MAP.MarkerClusterGroup.prototype.addLayer = function(layer)
@@ -217,7 +219,7 @@
 		
 		if(!this._topClusterLevel)
 		{
-			this._needsClustering.push(layer);
+			this._needsClustering[layer.__stamp_id] = this._needsClustering.push(layer) - 1;
 			return; // this;
 		}
 		
@@ -308,7 +310,7 @@
 		
 		if(this._topClusterLevel)
 		{
-			console.log('has map, layers: ' + layersArray.length);
+			// console.log('has map, layers: ' + layersArray.length);
 			var offset = 0, started = (new Date()).getTime();
 			
 			var process = MAP.bind(function()
@@ -325,6 +327,7 @@
 					}
 					
 					m = layersArray[offset];
+					MAP.stamp(m)
 					
 					//Not point data, can't be clustered
 					// if(!m.getPosition)
@@ -352,13 +355,13 @@
 				if(offset === layersArray.length)
 				{
 					// alert('markers loaded for' + ( (new Date).getTime() - started ) + 'ms');
-					
+					this._topClusterLevel._recalculateBounds();
 					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
 					
 					// Update the icons of all those visible clusters that were affected
 					fg.eachLayer(function(c)
 					{
-						if(c instanceof MAP.MarkerCluster && c._iconNeedsUpdate){ c._updateIcon(); }
+						if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); }
 					});
 				}
 				else
@@ -371,25 +374,22 @@
 		}
 		else
 		{
-			console.warn('has no map');
-			
 			newMarkers = [];
+			var length = this._needsClustering.length;
+			
 			for(i = 0, l = layersArray.length; i < l; i++)
 			{
 				m = layersArray[i];
-			// 	//Not point data, can't be clustered
-			// 	if (!m.getLatLng) {
-			// 		npg.addLayer(m);
-			// 		continue;
-			// 	}
+				MAP.stamp(m)
 				
 				if(this.hasLayer(m)){ continue; }
 				
-				newMarkers.push(m);
+				this._needsClustering_i[m.__stamp_id] = length + newMarkers.push(m) - 1;
 			}
 			
 			this._needsClustering = this._needsClustering.concat(newMarkers);
 		}
+		
 		return this;
 	};
 	
@@ -448,6 +448,8 @@
 		if(!this.map)
 		{
 			this._needsClustering = [];
+			this._needsClustering_i = {};
+			
 			delete this._gridClusters;
 			delete this._gridUnclustered;
 		}
@@ -486,7 +488,7 @@
 	// Zoom: Zoom to start adding at (Pass this._maxZoom to start at the bottom)
 	MAP.MarkerClusterGroup.prototype._addLayer = function (layer, zoom)
 	{
-		var	markerPoint, z
+		var	markerPoint, closest, z
 		,	gridClusters	= this._gridClusters
 		,	gridUnclustered	= this._gridUnclustered
 		;
@@ -506,12 +508,10 @@
 		//Find the lowest zoom level to slot this one in
 		for(; zoom >= 0; zoom--)
 		{
-			markerPoint = this.ll2px(layer, layer.getPosition(), zoom); // calculate pixel position
+			markerPoint = this.ll2px(layer, layer.position, zoom); // calculate pixel position
 			
-			//Try find a cluster close by
-			var closest = gridClusters[zoom].getNearObject(markerPoint);
-			// console.log(markerPoint, this.map.zoom);
-			if(closest)
+			// Try find a cluster close by
+			if(closest = gridClusters[zoom].getNearObject(markerPoint))
 			{
 				closest._addChild(layer);
 				layer.__parent = closest;
@@ -520,12 +520,10 @@
 			}
 			
 			//Try find a marker close by to form a new cluster with
-			// console.log(markerPoint);
-			closest = gridUnclustered[zoom].getNearObject(markerPoint);
-			if(closest)
+			if(closest = gridUnclustered[zoom].getNearObject(markerPoint))
 			{
 				var parent = closest.__parent;
-				if (parent){ this._removeLayer(closest, false); }
+				if(parent){ this._removeLayer(closest, false); }
 				
 				//Create new cluster with these 2 in it
 				var newCluster = new MAP.MarkerCluster(this, zoom, closest, layer);
@@ -538,31 +536,26 @@
 				for(z = zoom - 1; z > parent._zoom; z--)
 				{
 					lastParent = new MAP.MarkerCluster(this, z, lastParent);
-					gridClusters[z].addObject(lastParent, this.ll2px(closest, closest.getPosition(), z));
+					gridClusters[z].addObject(lastParent, this.ll2px(closest, closest.position, z));
 				}
 				parent._addChild(lastParent);
 				
 				//Remove closest from this zoom level and any above that it is in, replace with newCluster
 				for(z = zoom; z >= 0; z--)
 				{
-					if(!gridUnclustered[z].removeObject(closest, this.ll2px(closest, closest.getPosition(), z))){ break; }
+					if(!gridUnclustered[z].removeObject(closest, this.ll2px(closest, closest.position, z))){ break; }
 				}
 				
 				return;
 			}
 			
-			//Didn't manage to cluster in at this zoom, record us as a marker here and continue upwards
+			//Didn't manage to cluster in at this zoom, record it as a marker here and continue upwards
 			gridUnclustered[zoom].addObject(layer, markerPoint);
 		}
-		
-		
-		// console.log(this._topClusterLevel, layer);
 		
 		//Didn't get in anything, add us to the top
 		this._topClusterLevel._addChild(layer);
 		layer.__parent = this._topClusterLevel;
-		
-		return;
 	};
 	
 	MAP.MarkerClusterGroup.prototype._removeLayer = function(marker, removeFromDistanceGrid, dontUpdateMap)
@@ -575,40 +568,56 @@
 		//Remove the marker from distance clusters it might be in
 		if(removeFromDistanceGrid)
 		{
-			for (var z = this._maxZoom; z >= 0; z--)
+			for(var z = this._maxZoom; z >= 0; z--)
 			{
-				if(!gridUnclustered[z].removeObject(marker, this.ll2px(marker, marker.getPosition(), z))){ break; }
+				if(!gridUnclustered[z].removeObject(marker, this.ll2px(marker, marker.position, z))){ break; }
 			}
 		}
 		
 		//Work our way up the clusters removing them as we go if required
-		var cluster	= marker.__parent,
-			markers	= cluster._markers,
-			i, otherMarker
+		var	i, otherMarker
+		,	cluster		= marker.__parent
+		,	markers		= cluster._markers
+		,	markers_i	= cluster._markers_i
+		,	s			= marker.__stamp_id
 		;
 		
 		//Remove the marker from the immediate parents marker list
 		// this._arraySplice(markers, marker);
-		if((i = markers.indexOf(marker)) > -1){ markers.splice(i, 1); }
 		
-		while (cluster)
+		
+		// if(i = markers_i[s])
+		
+		// if(markers.indexOf(marker)!= markers_i[s])
+		// console.log(markers.indexOf(marker), markers_i[s]);
+		if((i = markers_i[s]) > -1)
+		{
+			markers.splice(i, 1);
+			delete markers_i[s];
+			
+			// for(s in markers_i)
+			// {
+			// 	if(markers_i[s] > i) markers_i[s]--;
+			// }
+		}
+		
+		while(cluster && cluster._zoom >= 0)
 		{
 			cluster._childCount--;
 			
-			//Top level, do nothing
-			if(cluster._zoom < 0){ break; }
-			else if(removeFromDistanceGrid && cluster._childCount <= 1) //Cluster no longer required
+			if(removeFromDistanceGrid && cluster._childCount <= 1) //Cluster no longer required
 			{
 				//We need to push the other marker up to the parent
 				otherMarker = cluster._markers[0] === marker ? cluster._markers[1] : cluster._markers[0];
 				
 				//Update distance grid
 				gridClusters[cluster._zoom].removeObject(cluster, this.ll2px(cluster, cluster._cPosition, cluster._zoom));
-				gridUnclustered[cluster._zoom].addObject(otherMarker, this.ll2px(otherMarker, otherMarker.getPosition(), cluster._zoom));
+				gridUnclustered[cluster._zoom].addObject(otherMarker, this.ll2px(otherMarker, otherMarker.position, cluster._zoom));
 				
 				//Move otherMarker up to parent
-				this._arraySplice(cluster.__parent._childClusters, cluster);
-				cluster.__parent._markers.push(otherMarker);
+				// this._arraySplice(cluster.__parent._childClusters, cluster);
+				if((i = cluster.__parent._childClusters.indexOf(cluster)) > -1){ cluster.__parent._childClusters.splice(i, 1); }
+				cluster.__parent._markers_i[otherMarker.__stamp_id] = cluster.__parent._markers.push(otherMarker) - 1;
 				otherMarker.__parent = cluster.__parent;
 				
 				if(cluster._icon)
@@ -620,7 +629,7 @@
 			}
 			else
 			{
-				cluster._recalculateBounds();
+				// cluster._recalculateBounds();
 				// if(!dontUpdateMap || !cluster._icon){ cluster._updateIcon(); }
 			}
 			
@@ -800,7 +809,7 @@
 		{
 			if(bounds.contains(layers[i].position))
 			{
-				fingerprint.push(MAP.stamp(layers[i]));
+				fingerprint.push(layers[i].__stamp_id);
 			}
 		}
 		
@@ -899,7 +908,7 @@
 			// TODO Maybe? Update markers in _recursivelyBecomeVisible
 			fg.eachLayer(function(n)
 			{
-				if(!(n instanceof MAP.MarkerCluster) && n.map){ n.setOpacity(1); }
+				if(!n._is_cluster && n.map){ n.setOpacity(1); }
 			});
 			
 			// update the positions of the just added clusters/markers
@@ -977,7 +986,7 @@
 					// this._forceLayout();
 					this._animationStart();
 					
-					layer.setPosition(this.getProjection().fromLatLngToDivPixel(newCluster.getPosition()));
+					layer.setPosition(this.getProjection().fromLatLngToDivPixel(newCluster.position));
 					layer.setOpacity(0);
 					
 					this._enqueue(function()

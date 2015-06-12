@@ -47,8 +47,7 @@ MAP.TRANSITIONS = false;
 
 MAP.stamp = function(obj)
 {
-	obj.__stamp_id = obj.__stamp_id || ++MAP.stamp.last_id;
-	return obj.__stamp_id;
+	return (obj.__stamp_id = '__stamp_id' in obj ? obj.__stamp_id : ++MAP.stamp.last_id);
 };
 MAP.stamp.last_id = 0;
 

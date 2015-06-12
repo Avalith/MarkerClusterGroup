@@ -31,3 +31,11 @@ clusterer.setMap(gmap);
 
 The [realworld example](http://avalith.github.io/MarkerClusterGroup/examples/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.
 
+
+### Performance optimization todos
+
+* stamp everything in the beginning
+
+* contains return (sw2.lat >= sw.lat) && (ne2.lat <= ne.lat) && (sw2.lng >= sw.lng) && (ne2.lng <= ne.lng)
+
+* object_i caches
