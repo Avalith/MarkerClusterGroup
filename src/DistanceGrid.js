@@ -54,7 +54,7 @@ MAP.DistanceGrid.prototype.removeObject = function(obj, point)
 		
 		cell.splice(i, 1);
 		
-		if(cell.length <= 1)
+		if(cell.length === 1)
 		{
 			delete this._grid[point._y];
 		}
@@ -63,7 +63,7 @@ MAP.DistanceGrid.prototype.removeObject = function(obj, point)
 	}
 };
 
-MAP.DistanceGrid.prototype.getNearObject = function (point)
+MAP.DistanceGrid.prototype.getNearObject = function(point)
 {
 	var i, j, k, row, cell, len, obj, dist
 	,	p				= this._getCoords(point)
@@ -89,8 +89,6 @@ MAP.DistanceGrid.prototype.getNearObject = function (point)
 						{
 							closestDistSq	= dist;
 							closest			= obj;
-							
-							// console.log(obj.z, [i, j, k], [closestDistSq])
 						}
 					}
 				}

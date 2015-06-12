@@ -219,7 +219,7 @@
 		
 		if(!this._topClusterLevel)
 		{
-			this._needsClustering[layer.__stamp_id] = this._needsClustering.push(layer) - 1;
+			this._needsClustering_i[layer.__stamp_id] = this._needsClustering.push(layer) - 1;
 			return; // this;
 		}
 		
@@ -584,21 +584,12 @@
 		
 		//Remove the marker from the immediate parents marker list
 		// this._arraySplice(markers, marker);
-		
-		
-		// if(i = markers_i[s])
-		
-		// if(markers.indexOf(marker)!= markers_i[s])
-		// console.log(markers.indexOf(marker), markers_i[s]);
 		if((i = markers_i[s]) > -1)
 		{
 			markers.splice(i, 1);
 			delete markers_i[s];
 			
-			// for(s in markers_i)
-			// {
-			// 	if(markers_i[s] > i) markers_i[s]--;
-			// }
+			for(s in markers_i){ if(markers_i[s] > i) markers_i[s]--; }
 		}
 		
 		while(cluster && cluster._zoom >= 0)

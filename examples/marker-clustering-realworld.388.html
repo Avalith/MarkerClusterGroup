@@ -38,7 +38,7 @@
 	
 	
 	
-	<script src="realworld.388.js"></script>
+	<!-- <script src="realworld.388.js"></script> -->
 	<!-- <script src="realworld.10000.js"></script> -->
 	<script src="realworld.50000.1.js"></script>
 
@@ -52,7 +52,7 @@
 	<div id="progress"><div id="progress-bar"></div></div>
 	<div id="map" style="float: left; height: 450px;"></div>
 	<!-- script type="text/javascript">
-		/**/
+		
 		var	latlng = L.latLng(-37.82, 175.24); // 388
 		// var	latlng = L.latLng(-37.89, 175.46); // 10000
 		// var	latlng = L.latLng(-37.79, 175.27); // 125000
@@ -80,12 +80,11 @@
 		}
 		
 		
-		
 		var map = L.map('map', {center: latlng, zoom: 13, layers: [tiles]});
 		
-		var Lclusterer = L.markerClusterGroup({ chunkedLoading: true, chunkProgress: updateProgressBar });
+		var Lclusterer = L.markerClusterGroup({ /*chunkedLoading: true, chunkProgress: updateProgressBar*/ });
 		
-		for (var i = 0; i < (00 || addressPoints.length); i++) {
+		for (var i = 0; i < (0 || addressPoints.length); i++) {
 			var a = addressPoints[i];
 			var title = a[2];
 			var marker = L.marker(new L.LatLng(a[0], a[1]), { title: title });
@@ -94,19 +93,12 @@
 			Lclusterer.addLayer(marker);
 		}
 		
-		Lclusterer.addLayer(L.marker(new L.LatLng(a[0], a[1]), { title: title }));
-		Lclusterer.addLayer(L.marker(new L.LatLng(a[0], a[1]), { title: title }));
+		// Lclusterer.addLayer(L.marker(new L.LatLng(a[0], a[1]), { title: title }));
+		// Lclusterer.addLayer(L.marker(new L.LatLng(a[0], a[1]), { title: title }));
+		// map.setView(marker._latlng, 21);
 		
-		map.setView(marker._latlng, 21);
 		
 		map.addLayer(Lclusterer);
-		
-		/**/
-		// setTimeout(function(){console.log('timeout');}, 1000);
-		// setTimeout(function(){
-			// Lclusterer.addLayer(L.marker(new L.LatLng(a[0], a[1]), { title: title }));
-		// }, 2000);
-		
 	</script -->
 	
 	
@@ -126,7 +118,7 @@
 			{
 				center	: latlng,
 				zoom	: 13,
-				minZoom	: 13,
+				// minZoom	: 13,
 				maxZoom	: 18,
 				animatedZoom: false,
 			});
@@ -173,14 +165,17 @@
 			markers.push(m);
 		}
 		
-		setTimeout(function(){ console.profile(); setTimeout(function()
-		{
+		gmap.setCenter(m.position);
+		gmap.setZoom(18)
+		
+		// setTimeout(function(){ console.profile(); setTimeout(function()
+		// {
 			clusterer.addLayers(markers);
 			
 			clusterer.setMap(gmap);
 			
-			setTimeout(function(){ console.profileEnd(); }, 2000)
-		}, 100); }, 500);
+		// 	setTimeout(function(){ console.profileEnd(); }, 2000)
+		// }, 100); }, 500);
 		
 		// q = [];
 		// for(var i = 0; i < (0 || addressPoints.length); i++)

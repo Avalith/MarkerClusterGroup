@@ -115,7 +115,7 @@
 	};
 	
 	//Expand our bounds and tell our parent to
-	MAP.MarkerCluster.prototype._expandBounds = function(marker, isNotificationFromChild)
+	MAP.MarkerCluster.prototype._expandBounds = function(marker)
 	{
 		var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
 		
@@ -564,4 +564,3 @@
 		};
 	}
 }());
-
