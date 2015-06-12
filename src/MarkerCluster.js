@@ -315,7 +315,7 @@
 		
 		if(!this._iconNeedsRecalc || markers.length === 0 && clusters.length === 0){ return; }
 		
-		this._iconNeedsRecalc = true;
+		this._iconNeedsRecalc = false;
 		
 		for(var i = clusters.length - 1; i >= 0; i--)
 		{
