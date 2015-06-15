@@ -9,60 +9,30 @@
 	{
 		this.map = null;
 		this.layers = [];
-		// this.layers_i = {};
-		
 		this.addLayer = function(layer)
 		{
 			if(!this.map){ return; }
 			
-			// this.layers_i[layer.__stamp_id] = 
-			this.layers.push(layer) - 1;
-			
+			this.layers.push(layer);
 			layer.setMap(this.map);
 		};
 		
 		this.removeLayer = function(layer)
 		{
-			// var s = layer.__stamp_id, i = this.layers_i[s];
-			
-			for(var i = 0, l = this.layers.length; i < l; i++)
-			{
-				if(this.layers[i] === layer)
-				{
-					this.layers.splice(i, 1)[0].setMap(null);
-				}
-			}
-			
-			// if(i)
-			// {
-			// 	this.layers[i].setMap(null);
-			// 	delete this.layers_i[s];
-			// 	delete this.layers[i];
-			// }
+			var i = this.layers.indexOf(layer);
+			if(i > -1){ this.layers.splice(i, 1)[0].setMap(null); }
 		};
 		
 		this.eachLayer = function(cb)
 		{
 			// console.log(this.layers);
-			for(var v, i = 0; i < this.layers.length; i++)
-			{
-				if(v = this.layers[i])
-				{
-					cb(v);
-				}
-				else
-				{
-					this.layers.splice(i, 1);
-					i--;
-				}
-			}
+			for(var i = 0; i < this.layers.length; i++){ cb(this.layers[i]); }
 		};
 		
 		this.clearLayers = function(cb)
 		{
 			for(var i = 0; i < this.layers.length; i++){ this.layers[i].setMap(null); }
 			this.layers = [];
-			this.layers_i = {};
 		};
 	}
 	
@@ -374,8 +344,6 @@
 						fg.removeLayer(markers[0] === m ? markers[1] : markers[0]);
 					}
 				}
-				
-				
 				
 				if(chunkProgress){ chunkProgress(offset, layersArray.length, (new Date()).getTime() - started); }
 				

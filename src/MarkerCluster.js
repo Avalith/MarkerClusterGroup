@@ -314,12 +314,14 @@
 		;
 		
 		
-		if(!this._iconNeedsRecalc || markers.length === 0 && clusters.length === 0){ return; }
+		// if(!this._iconNeedsRecalc || markers.length === 0 && clusters.length === 0){ return; }
 		
 		for(i = clusters.length - 1; i >= 0; i--)
 		{
 			clusters[i]._recalculateBounds();
 		}
+		
+		if(this === this._group._topClusterLevel){ return; }
 		
 		var m		= this._wPosition || (markers[0] || clusters[0]).position
 		,	min_lat = m.lat()
@@ -333,15 +335,14 @@
 		
 		// this._cPosition = this._wPosition = m;
 		
-		var new_markers = 0;
+		// var new_markers = 0;
 		for(i = markers.length - 1; i >= 0; i--)
 		{
 			m = markers[i];
 			
-			if(!m._iconNeedsRecalc) continue;
-			m._iconNeedsRecalc = false;
-			
-			new_markers++;
+			// if(!m._iconNeedsRecalc) continue;
+			// m._iconNeedsRecalc = false;
+			// new_markers++;
 			
 			m  = m.position;
 			
@@ -363,9 +364,11 @@
 			// m._iconNeedsRecalc = false;
 			
 			x = m._wPosition;
-			avg_cnt += m._childCount;
-			avg_lat += x.lat() * m._childCount;
-			avg_lng += x.lng() * m._childCount;
+			
+			avg_cnt++;
+			// avg_cnt += m._childCount;
+			avg_lat += x.lat()// * m._childCount;
+			avg_lng += x.lng()// * m._childCount;
 			
 			m = m._bounds;
 			sw = m.getSouthWest();
@@ -380,14 +383,14 @@
 		
 		if(avg_cnt)
 		{
-			// console.log(avg_cnt, avg_lat/avg_cnt, this._wPosition.lat(), avg_lng/avg_cnt, this._wPosition.lng());
-			this.setPosition(this._wPosition = new GM.LatLng(avg_lat/avg_cnt, avg_lng/avg_cnt));
+			this._wPosition = new GM.LatLng(avg_lat/avg_cnt, avg_lng/avg_cnt);
 		}
 		else
 		{
-			// console.log(avg_cnt, avg_lat, this._wPosition.lat(), avg_lng, this._wPosition.lng());
-			this.setPosition(this._wPosition = new GM.LatLng(avg_lat, avg_lng));
+			this._wPosition = new GM.LatLng(avg_lat, avg_lng);
 		}
+		
+		this.setPosition(this._wPosition);
 	};
 	
 	

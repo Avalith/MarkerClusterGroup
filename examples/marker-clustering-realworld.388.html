@@ -50,9 +50,9 @@
 	<h2 style="float: right;">Google Maps</h2>
 	<div style="clear: both;" />
 	
-	<div id="progress"><div id="progress-bar"></div></div>
+	<!--div id="progress"><div id="progress-bar"></div></div>
 	<div id="map" style="float: left; height: 450px;"></div>
-	<!--script type="text/javascript">
+	<script type="text/javascript">
 		
 		var	latlng = L.latLng(-37.82, 175.24); // 388
 		// var	latlng = L.latLng(-37.89, 175.46); // 10000
@@ -168,6 +168,7 @@
 				
 				markers.push(m);
 			}
+			
 			return markers;
 		}
 		
@@ -197,7 +198,7 @@
 		// gmap.setZoom(18)
 		
 		size = 1000;
-		end = 1; parseInt(hp_markers.length / size, 10);
+		end = parseInt(hp_markers.length / size, 10);
 		
 		load = function(i)
 		{
@@ -212,8 +213,7 @@
 		};
 		
 		
-		setTimeout(function(){ console.profile(); setTimeout(function()
-		{
+		setTimeout(function(){ console.profile(); setTimeout(function(){
 			// clusterer.addLayers(markers1);
 			// clusterer.addLayers(hp_markers);
 			
@@ -233,7 +233,7 @@
 			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers7);
 			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers8);
 					
-					setTimeout(function(){ console.profileEnd(); }, end * 1000);
+					// setTimeout(function(){ console.profileEnd(); }, end * 1000);
 			// }, 100); }, 1000);
 			// }, 100); }, 1000);
 			// }, 100); }, 1000);
