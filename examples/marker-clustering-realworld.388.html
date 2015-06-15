@@ -38,9 +38,10 @@
 	
 	
 	
-	<!-- <script src="realworld.388.js"></script> -->
+	<script src="realworld.388.js"></script>
 	<!-- <script src="realworld.10000.js"></script> -->
-	<script src="realworld.50000.1.js"></script>
+	<!-- <script src="realworld.50000.1.js"></script> -->
+	<script src="data.js"></script>
 
 
 </head>
@@ -111,13 +112,14 @@
 		bench = function(f, n){ start = performance.now(); for(i = n; i--;){ f(); }; return (performance.now() - start) / n; }
 		
 		
-		var latlng	= new google.maps.LatLng(-37.82, 175.24);
+		// var latlng	= new google.maps.LatLng(-37.82, 175.24);
 		// var latlng	= new google.maps.LatLng(-37.89, 175.46);
 		// var latlng	= new google.maps.LatLng(-37.79, 175.27);
+		var latlng	= new google.maps.LatLng(42, -17);
 		var gmap	= new google.maps.Map(document.getElementById('gmap'),
 			{
 				center	: latlng,
-				zoom	: 13,
+				zoom	: 3,
 				// minZoom	: 13,
 				maxZoom	: 18,
 				animatedZoom: false,
@@ -150,61 +152,99 @@
 		GMM = google.maps.Marker;
 		GLL = google.maps.LatLng;
 		
-		markers = [];
-		for(var m, a, i = 0; i < (0 || addressPoints.length); i++)
+		gen = function()
 		{
-			a = addressPoints[i];
-			m = new GMM();
-			
-			m.__id = i;
-			m.title = a[2];
-			
-			m.set('position', new GLL(a[0], a[1]));
-			// m.set('optimized', false)
-			
-			markers.push(m);
+			markers = [];
+			for(var m, a, i = 0; i < (0 || addressPoints.length); i++)
+			{
+				a = addressPoints[i];
+				m = new GMM();
+				
+				m.__id = i;
+				m.title = a[2];
+				
+				m.set('position', new GLL(a[0], a[1]));
+				// m.set('optimized', false)
+				
+				markers.push(m);
+			}
+			return markers;
 		}
 		
-		markers2 = [];
-		for(var m, a, i = 0; i < (0 || addressPoints.length); i+=2)
+		
+		markers1 = gen();
+		// markers2 = gen();
+		// markers3 = gen();
+		// markers4 = gen();
+		// markers5 = gen();
+		// markers6 = gen();
+		// markers7 = gen();
+		// markers8 = gen();
+		
+		hp_markers = [];
+		for(var d, m, i = 0, l = data.items.length; i < l; i++)
 		{
-			a = addressPoints[i];
+			d = data.items[i];
 			m = new GMM();
+			m.setPosition(new GLL(d[1], d[2]));
+			m.__id = d[0];
 			
-			m.__id = i;
-			m.title = a[2];
-			
-			m.set('position', new GLL(a[0], a[1]));
-			// m.set('optimized', false)
-			
-			markers2.push(m);
+			hp_markers.push(m);
 		}
+		
 		
 		// gmap.setCenter(m.position);
 		// gmap.setZoom(18)
 		
+		size = 1000;
+		end = 1; parseInt(hp_markers.length / size, 10);
+		
+		load = function(i)
+		{
+			console.log([i, end, ',', i*size, (i+1)*size]);
+			clusterer.addLayers(hp_markers.slice(i*size, (i+1)*size));
+			console.log('end');
+			
+			if(i < end)
+			{
+				setTimeout(function(){ load(++i); }, 1000);
+			}
+		};
+		
+		
 		setTimeout(function(){ console.profile(); setTimeout(function()
 		{
-			clusterer.addLayers(markers);
+			// clusterer.addLayers(markers1);
+			// clusterer.addLayers(hp_markers);
+			
+			load(0);
 			
 			clusterer.setMap(gmap);
 			
-			clusterer.addLayers(markers2);
 			
-			setTimeout(function()
+			setTimeout(function(){ setTimeout(function()
 			{
-				console.profileEnd();
-				
-				setTimeout(function(){ console.profile(); setTimeout(function()
-				{
-					clusterer.addLayers(markers2);
-					
-					setTimeout(function(){ console.profileEnd(); }, 2000)
-				}, 100); }, 500);
-				
+			// 		clusterer.addLayers(markers2);
 			
-			}, 2000)
+			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers3);
+			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers4);
+			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers5);
+			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers6);
+			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers7);
+			// 		setTimeout(function(){ setTimeout(function(){ clusterer.addLayers(markers8);
+					
+					setTimeout(function(){ console.profileEnd(); }, end * 1000);
+			// }, 100); }, 1000);
+			// }, 100); }, 1000);
+			// }, 100); }, 1000);
+			// }, 100); }, 1000);
+			// }, 100); }, 1000);
+			// }, 100); }, 1000);
+			}, 100); }, 1000);
 		}, 100); }, 500);
+		
+		
+		
 		
 		// q = [];
 		// for(var i = 0; i < (0 || addressPoints.length); i++)

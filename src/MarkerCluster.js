@@ -7,9 +7,7 @@
 	MAP.MarkerCluster = function(group, zoom, a, b)
 	{
 		this._is_cluster = true;
-		MAP.stamp(this)
-		
-		// extend(MarkerCluster, GM.OverlayView);
+		MAP.stamp(this);
 		
 		this._group				= group;
 		this._zoom				= zoom;
@@ -115,46 +113,6 @@
 		
 		if(this.__parent){ this.__parent._addChild(new1, true); }
 	};
-	
-	//Expand our bounds and tell our parent to
-	// MAP.MarkerCluster.prototype._expandBounds = function(marker)
-	// {
-	// 	var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
-		
-	// 	// console.log(marker, addedPosition);
-	// 	if(marker._is_cluster)
-	// 	{
-	// 		// console.info(this._bounds, marker._bounds);
-	// 		this._bounds.union(marker._bounds);
-	// 		addedCount = marker._childCount;
-	// 	}
-	// 	else
-	// 	{
-	// 		this._bounds.extend(addedPosition);
-	// 		// console.info(this._bounds);
-	// 		addedCount = 1;
-	// 	}
-		
-	// 	if(!this._cPosition)
-	// 	{
-	// 		// when clustering, take position of the first point as the cluster center
-	// 		this._cPosition = marker._cPosition || addedPosition;
-	// 	}
-		
-	// 	// when showing clusters, take weighted average of all points as cluster center
-	// 	var totalCount = this._childCount + addedCount;
-		
-	// 	//Calculate weighted latlng for display
-	// 	if(this._wPosition)
-	// 	{
-	// 		lat = (addedPosition.lat() * addedCount + this._wPosition.lat() * this._childCount) / totalCount;
-	// 		lng = (addedPosition.lng() * addedCount + this._wPosition.lng() * this._childCount) / totalCount;
-			
-	// 		addedPosition = new GM.LatLng(lat, lng);
-	// 	}
-		
-	// 	this.setPosition(this._wPosition = addedPosition);
-	// };
 	
 	// This is not needed
 	MAP.MarkerCluster.prototype.getChildCount = function(){ return this._childCount; };
@@ -305,9 +263,52 @@
 		this._group._featureGroup.addLayer(this);
 	};
 	
+	
+	
+	
+	//Expand our bounds and tell our parent to
+	// MAP.MarkerCluster.prototype._expandBounds = function(marker)
+	// {
+	// 	var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
+		
+	// 	// console.log(marker, addedPosition);
+	// 	if(marker._is_cluster)
+	// 	{
+	// 		// console.info(this._bounds, marker._bounds);
+	// 		this._bounds.union(marker._bounds);
+	// 		addedCount = marker._childCount;
+	// 	}
+	// 	else
+	// 	{
+	// 		this._bounds.extend(addedPosition);
+	// 		// console.info(this._bounds);
+	// 		addedCount = 1;
+	// 	}
+		
+	// 	if(!this._cPosition)
+	// 	{
+	// 		// when clustering, take position of the first point as the cluster center
+	// 		this._cPosition = marker._cPosition || addedPosition;
+	// 	}
+		
+	// 	// when showing clusters, take weighted average of all points as cluster center
+	// 	var totalCount = this._childCount + addedCount;
+		
+	// 	//Calculate weighted latlng for display
+	// 	if(this._wPosition)
+	// 	{
+	// 		lat = (addedPosition.lat() * addedCount + this._wPosition.lat() * this._childCount) / totalCount;
+	// 		lng = (addedPosition.lng() * addedCount + this._wPosition.lng() * this._childCount) / totalCount;
+			
+	// 		addedPosition = new GM.LatLng(lat, lng);
+	// 	}
+		
+	// 	this.setPosition(this._wPosition = addedPosition);
+	// };
+	
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
 	{
-		var x, sw, ne
+		var i, x, sw, ne
 		,	markers		= this._markers
 		,	clusters	= this._childClusters
 		;
@@ -315,14 +316,12 @@
 		
 		if(!this._iconNeedsRecalc || markers.length === 0 && clusters.length === 0){ return; }
 		
-		this._iconNeedsRecalc = false;
-		
-		for(var i = clusters.length - 1; i >= 0; i--)
+		for(i = clusters.length - 1; i >= 0; i--)
 		{
 			clusters[i]._recalculateBounds();
 		}
 		
-		var m		= (markers[0] || clusters[0]).position
+		var m		= this._wPosition || (markers[0] || clusters[0]).position
 		,	min_lat = m.lat()
 		,	min_lng = m.lng()
 		,	max_lat = m.lat()
@@ -332,11 +331,19 @@
 		,	avg_cnt	= markers.length
 		;
 		
-		this._cPosition = this._wPosition = m;
+		// this._cPosition = this._wPosition = m;
 		
-		for(var i = markers.length - 1; i >= 0; i--)
+		var new_markers = 0;
+		for(i = markers.length - 1; i >= 0; i--)
 		{
-			m = markers[i].position;
+			m = markers[i];
+			
+			if(!m._iconNeedsRecalc) continue;
+			m._iconNeedsRecalc = false;
+			
+			new_markers++;
+			
+			m  = m.position;
 			
 			x = m.lat();
 			avg_lat += x;
@@ -347,9 +354,13 @@
 			if(x < min_lng){ min_lng = x; } else if(x > max_lng){ max_lng = x; }
 		}
 		
-		for(var i = clusters.length - 1; i >= 0; i--)
+		
+		for(i = clusters.length - 1; i >= 0; i--)
 		{
 			m = clusters[i];
+			
+			// if(!m._iconNeedsRecalc) continue;
+			// m._iconNeedsRecalc = false;
 			
 			x = m._wPosition;
 			avg_cnt += m._childCount;
@@ -377,13 +388,10 @@
 			// console.log(avg_cnt, avg_lat, this._wPosition.lat(), avg_lng, this._wPosition.lng());
 			this.setPosition(this._wPosition = new GM.LatLng(avg_lat, avg_lng));
 		}
-		
-		// if(m.__parent !== this._topClusterLevel)
-		// TODO do not do for top it should be done after all recals outside of this in MarkerClusterGroup
-		
-		// if(this.__parent){ this.__parent._recalculateBounds(); }
-		
 	};
+	
+	
+	
 	
 	
 	// EVENT

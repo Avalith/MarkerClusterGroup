@@ -9,27 +9,36 @@
 	{
 		this.map = null;
 		this.layers = [];
-		this.layers_i = {};
+		// this.layers_i = {};
 		
 		this.addLayer = function(layer)
 		{
 			if(!this.map){ return; }
 			
-			this.layers_i[layer.__stamp_id] = this.layers.push(layer) - 1;
+			// this.layers_i[layer.__stamp_id] = 
+			this.layers.push(layer) - 1;
 			
 			layer.setMap(this.map);
 		};
 		
 		this.removeLayer = function(layer)
 		{
-			var s = layer.__stamp_id, i = this.layers_i[s];
+			// var s = layer.__stamp_id, i = this.layers_i[s];
 			
-			if(i)
+			for(var i = 0, l = this.layers.length; i < l; i++)
 			{
-				this.layers[i].setMap(null);
-				delete this.layers_i[s];
-				delete this.layers[i];
+				if(this.layers[i] === layer)
+				{
+					this.layers.splice(i, 1)[0].setMap(null);
+				}
 			}
+			
+			// if(i)
+			// {
+			// 	this.layers[i].setMap(null);
+			// 	delete this.layers_i[s];
+			// 	delete this.layers[i];
+			// }
 		};
 		
 		this.eachLayer = function(cb)
@@ -260,6 +269,9 @@
 	
 	MAP.MarkerClusterGroup.prototype.removeLayer = function(layer)
 	{
+		console.log(1);
+		
+		return;
 		// if (layer instanceof L.LayerGroup)
 		// {
 		// 	var array = [];
@@ -269,37 +281,47 @@
 		// 	return this.removeLayers(array);
 		// }
 		
-		// Non point layers
-		// if (!layer.getLatLng) {
-		// 	this._nonPointGroup.removeLayer(layer);
-		// 	return this;
-		// }
 		
-		// if (!this._map) {
-		// 	if (!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer)) {
+		// ,	s			= marker.__stamp_id
+		// ;
+		
+		// Remove the marker from the immediate parents marker list
+		var markers		= this._needsClustering
+		,	markers_i	= this._needsClustering_i
+		;
+		
+		if((i = markers_i[s]) > -1)
+		{
+			markers.splice(i, 1);
+			delete markers_i[s];
+			
+			for(var x in markers_i){ if(markers_i[x] > i) markers_i[x]--; }
+		}
+		
+		if (!this._map) {
+			if(!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer))
+			{
 		// 		this._needsRemoving.push(layer);
-		// 	}
-		// 	return this;
-		// }
+			}
+			return this;
+		}
 		
-		// if (!layer.__parent) {
-		// 	return this;
-		// }
+		if(!layer.__parent){ return this; }
 		
-		// if (this._unspiderfy) {
-		// 	this._unspiderfy();
-		// 	this._unspiderfyLayer(layer);
-		// }
+		if(this._unspiderfy)
+		{
+			this._unspiderfy();
+			this._unspiderfyLayer(layer);
+		}
 		
 		// //Remove the marker from clusters
-		// this._removeLayer(layer, true);
+		this._removeLayer(layer, true);
 		
-		// if (this._featureGroup.hasLayer(layer)) {
-		// 	this._featureGroup.removeLayer(layer);
-		// 	if (layer.setOpacity) {
-		// 		layer.setOpacity(1);
-		// 	}
-		// }
+		if(this._featureGroup.hasLayer(layer))
+		{
+			this._featureGroup.removeLayer(layer);
+			if(layer.setOpacity){ layer.setOpacity(1); }
+		}
 		
 		return this;
 	};
@@ -338,6 +360,7 @@
 					}
 					
 					m = layersArray[offset];
+					m._iconNeedsRecalc = true;
 					MAP.stamp(m);
 					
 					if(this.hasLayer(m)){ continue; }
@@ -358,23 +381,8 @@
 				
 				if(offset === layersArray.length)
 				{
-					// for(offset = 0; offset < length; offset++)
-					// {
-					// 	m = layersArray[offset];
-					// 	if(m.__parent && m.__parent !== this._topClusterLevel)
-					// 	{
-					// 		// TODO	May be trigger partial recalc not full (must think)
-					// 		// 		_iconNeedsRecalc = might be a [] only holding new elements?
-							
-					// 		m.__parent._recalculateBounds();
-					// 	}
-					// }
-					
-					
 					this._topClusterLevel._recalculateBounds();
 					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
-					
-					
 					
 					// Update the icons of all those visible clusters that were affected
 					fg.eachLayer(function(c)
