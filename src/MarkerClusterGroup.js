@@ -113,7 +113,6 @@
 		// Remember the current zoom level and bounds
 		this._zoom = this.map.getZoom();
 		this._currentShownBounds = this._getExpandedVisibleBounds();
-		
 		// TODO: move this in spiderify.js with bind and call 
 		if(this._spiderfierOnAdd){ this._spiderfierOnAdd(); }
 		
@@ -206,7 +205,7 @@
 	
 	MAP.MarkerClusterGroup.prototype.removeLayer = function(layer)
 	{
-		console.log(1);
+		console.log('remove layer');
 		
 		return;
 		// if (layer instanceof L.LayerGroup)
@@ -282,7 +281,7 @@
 		{
 			// console.log('has map, layers: ' + layersArray.length);
 			var offset = 0, started = (new Date()).getTime();
-			length = layersArray.length;
+			if(!(length = layersArray.length)){ return; }
 			
 			var process = MAP.bind(function()
 			{
@@ -320,10 +319,7 @@
 					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
 					
 					// Update the icons of all those visible clusters that were affected
-					fg.eachLayer(function(c)
-					{
-						if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); }
-					});
+					fg.eachLayer(function(c){ if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); } });
 					
 					// TODO Trigger Done Event
 				}
@@ -603,8 +599,8 @@
 	{
 		var _this = this;
 		
-		GE.addListener(this.map, 'zoom_changed', function(){ _this._zoomEnd(); });
-		// GE.addListener(this.map, 'dragend', function(){ _this._moveEnd(); });
+		GE.addListener(this.map, 'zoom_changed'	, function(){ _this._zoomEnd(); });
+		GE.addListener(this.map, 'dragend'		, function(){ _this._moveEnd(); });
 		// this._map.on('moveend', this._moveEnd, this);
 		
 		// var map = this.map,

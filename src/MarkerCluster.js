@@ -151,7 +151,7 @@
 					nm._backupPosition = nm.position;
 					
 					nm.setPosition(startPos);
-					if(nm.setOpacity){ nm.setOpacity(0); }
+					// if(nm.setOpacity){ nm.setOpacity(0); }
 				}
 				
 				c._group._featureGroup.addLayer(nm);
@@ -175,7 +175,7 @@
 					if(!exceptBounds || !exceptBounds.contains(m.position))
 					{
 						c._group._featureGroup.removeLayer(m);
-						if(m.setOpacity){ m.setOpacity(1); }
+						// if(m.setOpacity){ m.setOpacity(1); }
 					}
 				}
 			},
@@ -188,7 +188,7 @@
 					if(!exceptBounds || !exceptBounds.contains(m.position))
 					{
 						c._group._featureGroup.removeLayer(m);
-						if(m.setOpacity){ m.setOpacity(1); }
+						// if(m.setOpacity){ m.setOpacity(1); }
 					}
 				}
 			}
@@ -209,7 +209,7 @@
 		,	zoom			= this._zoom
 		;
 		
-		if(zoomLevelToStart > zoom) //Still going down to required depth, just recurse to child clusters
+		if(zoomLevelToStart < zoom) //Still going down to required depth, just recurse to child clusters
 		{
 			for(i = childClusters.length - 1; i >= 0; i--)
 			{
@@ -222,15 +222,8 @@
 		}
 		else //In required depth
 		{
-			if(runAtEveryLevel)
-			{
-				runAtEveryLevel(this);
-			}
-			
-			if(runAtBottomLevel && this._zoom === zoomLevelToStop)
-			{
-				runAtBottomLevel(this);
-			}
+			if(runAtEveryLevel){ runAtEveryLevel(this); }
+			if(runAtBottomLevel && this._zoom === zoomLevelToStop){ runAtBottomLevel(this); }
 			
 			//TODO: This loop is the same as above
 			if(zoomLevelToStop > zoom)
@@ -471,12 +464,12 @@
 		this._iconNeedsUpdate = false;
 	};
 	
-	MAP.MarkerCluster.prototype.setOpacity = function(o)
-	{
-		if(!this._div){ return null; }
+	// MAP.MarkerCluster.prototype.setOpacity = function(o)
+	// {
+	// 	if(!this._div){ return null; }
 		
-		this._div.style.opacity = o;
-	};
+	// 	this._div.style.opacity = o;
+	// };
 	
 	if(MAP.TRANSITIONS)
 	{
@@ -499,11 +492,11 @@
 				if(c._isSingleParent() && previousZoomLevel - 1 === newZoomLevel)
 				{
 					c._recursivelyRemoveChildrenFromMap(bounds, previousZoomLevel); //Immediately remove our children as we are replacing them. TODO previousBounds not bounds
-					c.setOpacity(1);
+					// c.setOpacity(1);
 				}
 				else
 				{
-					c.setOpacity(0);
+					// c.setOpacity(0);
 				}
 				
 				// console.log(c);
@@ -526,7 +519,7 @@
 						if(m.map)
 						{
 							m.setPosition(center);
-							m.setOpacity(0);
+							// m.setOpacity(0);
 						}
 					}
 				},
@@ -540,7 +533,7 @@
 						if(cm.map)
 						{
 							cm.setPosition(center);
-							cm.setOpacity(0);
+							// cm.setOpacity(0);
 						}
 					}
 				}
@@ -549,7 +542,7 @@
 		
 		MAP.MarkerCluster.prototype._recursivelyBecomeVisible = function(bounds, zoomLevel)
 		{
-			this._recursively(bounds, 0, zoomLevel, null, function(c){ c.setOpacity(1); });
+			// this._recursively(bounds, 0, zoomLevel, null, function(c){ c.setOpacity(1); });
 		};
 		
 		MAP.MarkerCluster.prototype._recursivelyRestoreChildPositions = function(zoomLevel)

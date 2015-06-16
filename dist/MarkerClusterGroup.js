@@ -66,6 +66,47 @@ MAP.extend = function(obj1, obj2)
 	return obj1;
 };
 
+MAP.spliceIndexOf = function(array, elem)
+{
+	for(var i = 0, l = array.length; i < l; i++)
+	{
+		if(array[i] === elem)
+		{
+			array.splice(i, 1);
+			return true;
+		}
+	}
+};
+
+MAP.FeatureGroup = function()
+{
+	this.map = null;
+	this.layers = [];
+	this.addLayer = function(layer)
+	{
+		if(!this.map){ return; }
+		
+		this.layers.push(layer);
+		layer.setMap(this.map);
+	};
+	
+	this.removeLayer = function(layer)
+	{
+		layer.setMap(null);
+		MAP.spliceIndexOf(this.layers, layer);
+	};
+	
+	this.eachLayer = function(cb)
+	{
+		for(var i = 0, l = this.layers.length; i < l; i++){ cb(this.layers[i]); }
+	};
+	
+	this.clearLayers = function(cb)
+	{
+		for(var i = 0, l = this.layers.length; i < l; i++){ this.layers[i].setMap(null); }
+		this.layers = [];
+	};
+};
 (function()
 {
 	var	GM = google.maps
@@ -73,41 +114,10 @@ MAP.extend = function(obj1, obj2)
 	;
 	
 	// TODO: get rid of this? or refactor it
-	function FeatureGroup()
-	{
-		this.map = null;
-		this.layers = [];
-		this.addLayer = function(layer)
-		{
-			if(!this.map){ return; }
-			
-			this.layers.push(layer);
-			layer.setMap(this.map);
-		};
-		
-		this.removeLayer = function(layer)
-		{
-			var i = this.layers.indexOf(layer);
-			if(i > -1){ this.layers.splice(i, 1)[0].setMap(null); }
-		};
-		
-		this.eachLayer = function(cb)
-		{
-			// console.log(this.layers);
-			for(var i = 0; i < this.layers.length; i++){ cb(this.layers[i]); }
-		};
-		
-		this.clearLayers = function(cb)
-		{
-			for(var i = 0; i < this.layers.length; i++){ this.layers[i].setMap(null); }
-			this.layers = [];
-		};
-	}
-	
 	
 	MAP.MarkerClusterGroup = function(options)
 	{
-		this._featureGroup = new FeatureGroup();
+		this._featureGroup = new MAP.FeatureGroup();
 		
 		this._inZoomAnimation	= 0;
 		this._needsClustering	= [];
@@ -156,12 +166,12 @@ MAP.extend = function(obj1, obj2)
 		
 		function bound(value, opt_min, opt_max)
 		{
-			if(opt_min){ value = Math.max(value, opt_min); }
-			if(opt_max){ value = Math.min(value, opt_max); }
+			if(opt_min){ value = value > opt_min ? value : opt_min; } // Math.max(value, opt_min); }
+			if(opt_max){ value = value < opt_max ? value : opt_max; } // Math.min(value, opt_max); }
 			return value;
 		}
 		
-		function deg2rad(deg){ return deg * (PI_180); }
+		function deg2rad(deg){ return deg * PI_180; }
 		
 		function projection(lat_lng, zoom)
 		{
@@ -173,8 +183,8 @@ MAP.extend = function(obj1, obj2)
 			// Truncating to 0.9999 effectively limits latitude to 89.189. This is about a third of a tile past the edge of the world tile.
 			siny = bound(Math.sin(deg2rad(lat_lng.lat())), -0.9999, 0.9999);
 			
-			point.x = parseInt((px_origin.x + lat_lng.lng() * px_per_lon_deg) * ntiles);
-			point.y = parseInt((px_origin.y + 0.5 * Math.log((1 + siny) / (1 - siny)) * -px_per_lon_rad) * ntiles);
+			point.x = Math.floor((px_origin.x + lat_lng.lng() * px_per_lon_deg) * ntiles);
+			point.y = Math.floor((px_origin.y + 0.5 * Math.log((1 + siny) / (1 - siny)) * -px_per_lon_rad) * ntiles);
 			
 			return point;
 		}
@@ -281,9 +291,7 @@ MAP.extend = function(obj1, obj2)
 			return; // this;
 		}
 		
-		if (this.hasLayer(layer)) {
-			return this;
-		}
+		if(this.hasLayer(layer)){ return this; }
 		
 		if(this._unspiderfy)
 		{
@@ -336,13 +344,13 @@ MAP.extend = function(obj1, obj2)
 			for(var x in markers_i){ if(markers_i[x] > i) markers_i[x]--; }
 		}
 		
-		if (!this._map) {
-			if(!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer))
-			{
-		// 		this._needsRemoving.push(layer);
-			}
-			return this;
-		}
+		// if(!this._map) {
+		// 	if(!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer))
+		// 	{
+		// // 		this._needsRemoving.push(layer);
+		// 	}
+		// 	return this;
+		// }
 		
 		if(!layer.__parent){ return this; }
 		
@@ -370,7 +378,7 @@ MAP.extend = function(obj1, obj2)
 	
 	MAP.MarkerClusterGroup.prototype.addLayers = function(layersArray)
 	{
-		var	newMarkers, i, l, m, markers
+		var	newMarkers, i, l, m, markers, length
 		,	fg				= this._featureGroup
 		// 	npg = this._nonPointGroup,
 		,	chunked			= this.options.chunkedLoading
@@ -382,7 +390,8 @@ MAP.extend = function(obj1, obj2)
 		if(this._topClusterLevel)
 		{
 			// console.log('has map, layers: ' + layersArray.length);
-			var offset = 0, length = layersArray.length, started = (new Date()).getTime();
+			var offset = 0, started = (new Date()).getTime();
+			length = layersArray.length;
 			
 			var process = MAP.bind(function()
 			{
@@ -438,12 +447,12 @@ MAP.extend = function(obj1, obj2)
 		else
 		{
 			newMarkers = [];
-			var length = this._needsClustering.length;
+			length = this._needsClustering.length;
 			
 			for(i = 0, l = layersArray.length; i < l; i++)
 			{
 				m = layersArray[i];
-				MAP.stamp(m)
+				MAP.stamp(m);
 				
 				if(this.hasLayer(m)){ continue; }
 				
@@ -557,7 +566,6 @@ MAP.extend = function(obj1, obj2)
 		;
 		
 		
-		layer._iconNeedsRecalc = true;
 		
 		// if(this.options.singleMarkerMode)
 		// {
@@ -570,6 +578,8 @@ MAP.extend = function(obj1, obj2)
 		// 		}
 		// 	});
 		// }
+		
+		layer._iconNeedsRecalc = true;
 		
 		//Find the lowest zoom level to slot this one in
 		for(; zoom >= 0; zoom--)
@@ -672,8 +682,7 @@ MAP.extend = function(obj1, obj2)
 				gridUnclustered[cluster._zoom].addObject(otherMarker, this.ll2px(otherMarker, otherMarker.position, cluster._zoom));
 				
 				//Move otherMarker up to parent
-				// this._arraySplice(cluster.__parent._childClusters, cluster);
-				if((i = cluster.__parent._childClusters.indexOf(cluster)) > -1){ cluster.__parent._childClusters.splice(i, 1); }
+				Map.spliceIndexOf(cluster.__parent._childClusters, cluster);
 				cluster.__parent._markers_i[otherMarker.__stamp_id] = cluster.__parent._markers.push(otherMarker) - 1;
 				otherMarker.__parent = cluster.__parent;
 				
@@ -1186,7 +1195,6 @@ MAP.extend = function(obj1, obj2)
 			this._updateIcon();
 			
 			GE.addDomListener(div, 'click', this._zoomOrSpiderfy);
-			
 		}
 		
 		this.getPanes().overlayMouseTarget.appendChild(this._div);
@@ -1415,7 +1423,6 @@ MAP.extend = function(obj1, obj2)
 	// 	this.setPosition(this._wPosition = addedPosition);
 	// };
 	
-	window.z = 0
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
 	{
 		var i
@@ -1751,12 +1758,11 @@ MAP.DistanceGrid.prototype.removeObject = function(obj, point)
 	
 	// console.log(this._objectPoint[obj.__stamp_id]);
 	
-	if((i = cell.indexOf(obj)) > -1)
+	
+	if(MAP.spliceIndexOf(cell, obj))
 	{
 		delete this._objectPoint[obj.__stamp_id];
 		delete point._cell;
-		
-		cell.splice(i, 1);
 		
 		if(cell.length === 1)
 		{
@@ -1771,6 +1777,7 @@ MAP.DistanceGrid.prototype.getNearObject = function(point)
 {
 	var i, j, k, row, cell, len, obj, dist
 	,	p				= this._getCoords(point)
+	,	sqDist			= this._sqDist
 	,	objectPoint		= this._objectPoint
 	,	closestDistSq	= this._sqCellSize
 	,	grid			= this._grid
@@ -1788,7 +1795,8 @@ MAP.DistanceGrid.prototype.getNearObject = function(point)
 					for(k = 0, len = cell.length; k < len; k++)
 					{
 						obj		= cell[k];
-						dist	= this._sqDist(objectPoint[obj.__stamp_id], point);
+						dist	= sqDist(objectPoint[obj.__stamp_id], point);
+						
 						if(dist < closestDistSq)
 						{
 							closestDistSq	= dist;
