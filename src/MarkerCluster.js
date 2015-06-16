@@ -25,7 +25,7 @@
 		this._div				= null;
 		this._div_count			= null;
 		
-		if(a){ this._addChild(a); this.setPosition(this._cPosition = this._wPosition = a.position); }
+		if(a){ this._addChild(a); this._cPosition = this.position = a.position; }
 		if(b){ this._addChild(b); }
 	};
 	
@@ -245,7 +245,7 @@
 		if(startPos)
 		{
 			this._backupPosition = this.position;
-			this.setPosition(startPos);
+			// this.setPosition(startPos);
 		}
 		
 		// this.setMap(this._group.map)
@@ -259,7 +259,7 @@
 	//Expand our bounds and tell our parent to
 	// MAP.MarkerCluster.prototype._expandBounds = function(marker)
 	// {
-	// 	var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
+	// 	var lat, lng, addedCount, addedPosition = marker.position;
 		
 	// 	// console.log(marker, addedPosition);
 	// 	if(marker._is_cluster)
@@ -285,15 +285,15 @@
 	// 	var totalCount = this._childCount + addedCount;
 		
 	// 	//Calculate weighted latlng for display
-	// 	if(this._wPosition)
+	// 	if(this.position)
 	// 	{
-	// 		lat = (addedPosition.lat() * addedCount + this._wPosition.lat() * this._childCount) / totalCount;
-	// 		lng = (addedPosition.lng() * addedCount + this._wPosition.lng() * this._childCount) / totalCount;
+	// 		lat = (addedPosition.lat() * addedCount + this.position.lat() * this._childCount) / totalCount;
+	// 		lng = (addedPosition.lng() * addedCount + this.position.lng() * this._childCount) / totalCount;
 			
 	// 		addedPosition = new GM.LatLng(lat, lng);
 	// 	}
 		
-	// 	this.setPosition(this._wPosition = addedPosition);
+	// 	this.setPosition(this.position = addedPosition);
 	// };
 	
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
@@ -314,7 +314,7 @@
 		if(this === this._group._topClusterLevel){ return; }
 		
 		var x, sw, ne, leftover
-		,	m		= this._wPosition || (markers[0] || clusters[0]).position
+		,	m		= this.position || (markers[0] || clusters[0]).position
 		,	min_lat = m.lat()
 		,	min_lng = m.lng()
 		,	max_lat = m.lat()
@@ -324,8 +324,6 @@
 		,	all_cnt = markers.length + clusters.length
 		,	avg_cnt = all_cnt
 		;
-		
-		// this._cPosition = this._wPosition = m;
 		
 		for(i = markers.length - 1; i >= 0; i--)
 		{
@@ -351,7 +349,7 @@
 			
 			if(!m._iconNeedsRecalc){ avg_cnt--; continue; } m._iconNeedsRecalc = false;
 			
-			x = m._wPosition;
+			x = m.position;
 			avg_lat += x.lat();
 			avg_lng += x.lng();
 			
@@ -377,12 +375,12 @@
 		{
 			leftover = all_cnt - avg_cnt;
 			
-			// console.log((this._wPosition.lat() * leftover + avg_lat)/all_cnt);
-			this.setPosition(this._wPosition = new GM.LatLng
+			// console.log((this.position.lat() * leftover + avg_lat)/all_cnt);
+			this.position = new GM.LatLng
 			(
-				(this._wPosition.lat() * leftover + avg_lat) / all_cnt,
-				(this._wPosition.lng() * leftover + avg_lng) / all_cnt
-			));
+				(this.position.lat() * leftover + avg_lat) / all_cnt,
+				(this.position.lng() * leftover + avg_lng) / all_cnt
+			);
 		}
 	};
 	
@@ -442,11 +440,11 @@
 		
 		// if(boundsZoom > zoom)
 		// {
-		// 	this._group._map.setView(this._position, zoom);
+		// 	this._group._map.setView(this.position, zoom);
 		// }
 		// else if(boundsZoom <= mapZoom) //If fitBounds wouldn't zoom us down, zoom us down instead
 		// {
-		// 	this._group._map.setView(this._position, mapZoom + 1);
+		// 	this._group._map.setView(this.position, mapZoom + 1);
 		// }
 		// else
 		// {
@@ -461,7 +459,10 @@
 		this._div.className = 'cluster cluster-size-' + ('' + this._childCount).length;
 		this._div_count.innerHTML = this._childCount;
 		
+		this.setPosition(this.position);
+		
 		this._iconNeedsUpdate = false;
+		
 	};
 	
 	// MAP.MarkerCluster.prototype.setOpacity = function(o)

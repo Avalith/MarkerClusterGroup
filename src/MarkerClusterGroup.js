@@ -256,7 +256,7 @@
 		if(this._featureGroup.hasLayer(layer))
 		{
 			this._featureGroup.removeLayer(layer);
-			if(layer.setOpacity){ layer.setOpacity(1); }
+			// if(layer.setOpacity){ layer.setOpacity(1); }
 		}
 		
 		return this;
@@ -839,7 +839,7 @@
 				else
 				{
 					//Fade out old cluster
-					c.setOpacity(0);
+					// c.setOpacity(0);
 					c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
 				}
 				
@@ -861,7 +861,7 @@
 			// TODO Maybe? Update markers in _recursivelyBecomeVisible
 			fg.eachLayer(function(n)
 			{
-				if(!n._is_cluster && n.map){ n.setOpacity(1); }
+				// if(!n._is_cluster && n.map){ n.setOpacity(1); }
 			});
 			
 			// update the positions of the just added clusters/markers
@@ -876,7 +876,7 @@
 				//update the positions of the just added clusters/markers
 				this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function(c)
 				{
-					c.setOpacity(1);
+					// c.setOpacity(1);
 					fg.removeLayer(c);
 				});
 				
@@ -915,7 +915,7 @@
 					var m = cluster._markers[0];
 					//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
 					m.setPosition(m.position);
-					if (m.setOpacity){ m.setOpacity(1); }
+					// if (m.setOpacity){ m.setOpacity(1); }
 				}
 				else
 				{
@@ -940,12 +940,12 @@
 					this._animationStart();
 					
 					layer.setPosition(this.getProjection().fromLatLngToDivPixel(newCluster.position));
-					layer.setOpacity(0);
+					// layer.setOpacity(0);
 					
 					this._enqueue(function()
 					{
 						fg.removeLayer(layer);
-						layer.setOpacity(1);
+						// layer.setOpacity(1);
 						me._animationEnd();
 					});
 				}
