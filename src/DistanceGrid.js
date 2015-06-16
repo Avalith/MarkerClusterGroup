@@ -47,12 +47,11 @@ MAP.DistanceGrid.prototype.removeObject = function(obj, point)
 	
 	// console.log(this._objectPoint[obj.__stamp_id]);
 	
-	if((i = cell.indexOf(obj)) > -1)
+	
+	if(MAP.spliceIndexOf(cell, obj))
 	{
 		delete this._objectPoint[obj.__stamp_id];
 		delete point._cell;
-		
-		cell.splice(i, 1);
 		
 		if(cell.length === 1)
 		{
@@ -67,6 +66,7 @@ MAP.DistanceGrid.prototype.getNearObject = function(point)
 {
 	var i, j, k, row, cell, len, obj, dist
 	,	p				= this._getCoords(point)
+	,	sqDist			= this._sqDist
 	,	objectPoint		= this._objectPoint
 	,	closestDistSq	= this._sqCellSize
 	,	grid			= this._grid
@@ -84,7 +84,8 @@ MAP.DistanceGrid.prototype.getNearObject = function(point)
 					for(k = 0, len = cell.length; k < len; k++)
 					{
 						obj		= cell[k];
-						dist	= this._sqDist(objectPoint[obj.__stamp_id], point);
+						dist	= sqDist(objectPoint[obj.__stamp_id], point);
+						
 						if(dist < closestDistSq)
 						{
 							closestDistSq	= dist;

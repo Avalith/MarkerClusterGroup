@@ -120,7 +120,7 @@
 			{
 				center	: latlng,
 				zoom	: 3,
-				// minZoom	: 13,
+				// minZoom	: 4,
 				maxZoom	: 18,
 				animatedZoom: false,
 			});
@@ -197,30 +197,31 @@
 		// gmap.setCenter(m.position);
 		// gmap.setZoom(18)
 		
-		size = 1000;
+		size = 10000;
 		end = parseInt(hp_markers.length / size, 10);
 		
 		load = function(i)
 		{
-			console.log([i, end, ',', i*size, (i+1)*size]);
+			console.log([i + '/' + end, i*size, (i+1)*size]);
 			clusterer.addLayers(hp_markers.slice(i*size, (i+1)*size));
-			console.log('end');
 			
 			if(i < end)
 			{
-				setTimeout(function(){ load(++i); }, 1000);
+				setTimeout(function(){ load(++i); }, 100);
+			}
+			else
+			{
+				setTimeout(function(){ console.profileEnd(); }, 100);
 			}
 		};
 		
+		clusterer.setMap(gmap);
 		
 		setTimeout(function(){ console.profile(); setTimeout(function(){
 			// clusterer.addLayers(markers1);
 			// clusterer.addLayers(hp_markers);
 			
 			load(0);
-			
-			clusterer.setMap(gmap);
-			
 			
 			setTimeout(function(){ setTimeout(function()
 			{

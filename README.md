@@ -36,4 +36,4 @@ The [realworld example](http://avalith.github.io/MarkerClusterGroup/examples/mar
 
 * contains return (sw2.lat >= sw.lat) && (ne2.lat <= ne.lat) && (sw2.lng >= sw.lng) && (ne2.lng <= ne.lng)
 
-* object_i caches
+* Index of is slow

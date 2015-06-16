@@ -75,7 +75,6 @@
 			this._updateIcon();
 			
 			GE.addDomListener(div, 'click', this._zoomOrSpiderfy);
-			
 		}
 		
 		this.getPanes().overlayMouseTarget.appendChild(this._div);
@@ -147,7 +146,6 @@
 				
 				if(!bounds.contains(nm.position)){ continue; }
 				
-				// console.log(startPos);
 				if(startPos)
 				{
 					nm._backupPosition = nm.position;
@@ -156,7 +154,6 @@
 					if(nm.setOpacity){ nm.setOpacity(0); }
 				}
 				
-				// console.log(nm);
 				c._group._featureGroup.addLayer(nm);
 			}
 		}, function(c){ c._addToMap(startPos); });
@@ -308,13 +305,13 @@
 	
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
 	{
-		var i, x, sw, ne
+		var i
 		,	markers		= this._markers
 		,	clusters	= this._childClusters
 		;
 		
 		
-		// if(!this._iconNeedsRecalc || markers.length === 0 && clusters.length === 0){ return; }
+		if(!this._iconNeedsRecalc || markers.length === 0 && clusters.length === 0){ return; }
 		
 		for(i = clusters.length - 1; i >= 0; i--)
 		{
@@ -323,28 +320,27 @@
 		
 		if(this === this._group._topClusterLevel){ return; }
 		
-		var m		= this._wPosition || (markers[0] || clusters[0]).position
+		var x, sw, ne, leftover
+		,	m		= this._wPosition || (markers[0] || clusters[0]).position
 		,	min_lat = m.lat()
 		,	min_lng = m.lng()
 		,	max_lat = m.lat()
 		,	max_lng = m.lng()
 		,	avg_lat = 0
 		,	avg_lng = 0
-		,	avg_cnt	= markers.length
+		,	all_cnt = markers.length + clusters.length
+		,	avg_cnt = all_cnt
 		;
 		
 		// this._cPosition = this._wPosition = m;
 		
-		// var new_markers = 0;
 		for(i = markers.length - 1; i >= 0; i--)
 		{
 			m = markers[i];
 			
-			// if(!m._iconNeedsRecalc) continue;
-			// m._iconNeedsRecalc = false;
-			// new_markers++;
+			if(!m._iconNeedsRecalc){ avg_cnt--; continue; } m._iconNeedsRecalc = false;
 			
-			m  = m.position;
+			m = m.position;
 			
 			x = m.lat();
 			avg_lat += x;
@@ -360,15 +356,11 @@
 		{
 			m = clusters[i];
 			
-			// if(!m._iconNeedsRecalc) continue;
-			// m._iconNeedsRecalc = false;
+			if(!m._iconNeedsRecalc){ avg_cnt--; continue; } m._iconNeedsRecalc = false;
 			
 			x = m._wPosition;
-			
-			avg_cnt++;
-			// avg_cnt += m._childCount;
-			avg_lat += x.lat()// * m._childCount;
-			avg_lng += x.lng()// * m._childCount;
+			avg_lat += x.lat();
+			avg_lng += x.lng();
 			
 			m = m._bounds;
 			sw = m.getSouthWest();
@@ -379,18 +371,26 @@
 			x = ne.lng(); if(x > max_lng){ max_lng = x; }
 		}
 		
-		this._bounds = new GM.LatLngBounds(new GM.LatLng(min_lat, min_lng), new GM.LatLng(max_lat, max_lng));
+		// this._bounds = new GM.LatLngBounds(new GM.LatLng(min_lat, min_lng), new GM.LatLng(max_lat, max_lng));
+		sw = this._bounds.getSouthWest();
+		ne = this._bounds.getNorthEast();
+		this._bounds = new GM.LatLngBounds
+		(
+			new GM.LatLng( Math.min(sw.lat(), min_lat), Math.min(sw.lng(), min_lng) ),
+			new GM.LatLng( Math.max(ne.lat(), max_lat), Math.max(ne.lng(), max_lng) )
+		);
 		
 		if(avg_cnt)
 		{
-			this._wPosition = new GM.LatLng(avg_lat/avg_cnt, avg_lng/avg_cnt);
+			leftover = all_cnt - avg_cnt;
+			
+			// console.log((this._wPosition.lat() * leftover + avg_lat)/all_cnt);
+			this.setPosition(this._wPosition = new GM.LatLng
+			(
+				(this._wPosition.lat() * leftover + avg_lat) / all_cnt,
+				(this._wPosition.lng() * leftover + avg_lng) / all_cnt
+			));
 		}
-		else
-		{
-			this._wPosition = new GM.LatLng(avg_lat, avg_lng);
-		}
-		
-		this.setPosition(this._wPosition);
 	};
 	
 	

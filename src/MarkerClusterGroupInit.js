@@ -59,3 +59,45 @@ MAP.extend = function(obj1, obj2)
 	
 	return obj1;
 };
+
+MAP.spliceIndexOf = function(array, elem)
+{
+	for(var i = 0, l = array.length; i < l; i++)
+	{
+		if(array[i] === elem)
+		{
+			array.splice(i, 1);
+			return true;
+		}
+	}
+};
+
+MAP.FeatureGroup = function()
+{
+	this.map = null;
+	this.layers = [];
+	this.addLayer = function(layer)
+	{
+		if(!this.map){ return; }
+		
+		this.layers.push(layer);
+		layer.setMap(this.map);
+	};
+	
+	this.removeLayer = function(layer)
+	{
+		layer.setMap(null);
+		MAP.spliceIndexOf(this.layers, layer);
+	};
+	
+	this.eachLayer = function(cb)
+	{
+		for(var i = 0, l = this.layers.length; i < l; i++){ cb(this.layers[i]); }
+	};
+	
+	this.clearLayers = function(cb)
+	{
+		for(var i = 0, l = this.layers.length; i < l; i++){ this.layers[i].setMap(null); }
+		this.layers = [];
+	};
+};

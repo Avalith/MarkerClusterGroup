@@ -5,41 +5,10 @@
 	;
 	
 	// TODO: get rid of this? or refactor it
-	function FeatureGroup()
-	{
-		this.map = null;
-		this.layers = [];
-		this.addLayer = function(layer)
-		{
-			if(!this.map){ return; }
-			
-			this.layers.push(layer);
-			layer.setMap(this.map);
-		};
-		
-		this.removeLayer = function(layer)
-		{
-			var i = this.layers.indexOf(layer);
-			if(i > -1){ this.layers.splice(i, 1)[0].setMap(null); }
-		};
-		
-		this.eachLayer = function(cb)
-		{
-			// console.log(this.layers);
-			for(var i = 0; i < this.layers.length; i++){ cb(this.layers[i]); }
-		};
-		
-		this.clearLayers = function(cb)
-		{
-			for(var i = 0; i < this.layers.length; i++){ this.layers[i].setMap(null); }
-			this.layers = [];
-		};
-	}
-	
 	
 	MAP.MarkerClusterGroup = function(options)
 	{
-		this._featureGroup = new FeatureGroup();
+		this._featureGroup = new MAP.FeatureGroup();
 		
 		this._inZoomAnimation	= 0;
 		this._needsClustering	= [];
@@ -88,12 +57,12 @@
 		
 		function bound(value, opt_min, opt_max)
 		{
-			if(opt_min){ value = Math.max(value, opt_min); }
-			if(opt_max){ value = Math.min(value, opt_max); }
+			if(opt_min){ value = value > opt_min ? value : opt_min; } // Math.max(value, opt_min); }
+			if(opt_max){ value = value < opt_max ? value : opt_max; } // Math.min(value, opt_max); }
 			return value;
 		}
 		
-		function deg2rad(deg){ return deg * (PI_180); }
+		function deg2rad(deg){ return deg * PI_180; }
 		
 		function projection(lat_lng, zoom)
 		{
@@ -105,8 +74,8 @@
 			// Truncating to 0.9999 effectively limits latitude to 89.189. This is about a third of a tile past the edge of the world tile.
 			siny = bound(Math.sin(deg2rad(lat_lng.lat())), -0.9999, 0.9999);
 			
-			point.x = parseInt((px_origin.x + lat_lng.lng() * px_per_lon_deg) * ntiles);
-			point.y = parseInt((px_origin.y + 0.5 * Math.log((1 + siny) / (1 - siny)) * -px_per_lon_rad) * ntiles);
+			point.x = Math.floor((px_origin.x + lat_lng.lng() * px_per_lon_deg) * ntiles);
+			point.y = Math.floor((px_origin.y + 0.5 * Math.log((1 + siny) / (1 - siny)) * -px_per_lon_rad) * ntiles);
 			
 			return point;
 		}
@@ -213,9 +182,7 @@
 			return; // this;
 		}
 		
-		if (this.hasLayer(layer)) {
-			return this;
-		}
+		if(this.hasLayer(layer)){ return this; }
 		
 		if(this._unspiderfy)
 		{
@@ -268,13 +235,13 @@
 			for(var x in markers_i){ if(markers_i[x] > i) markers_i[x]--; }
 		}
 		
-		if (!this._map) {
-			if(!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer))
-			{
-		// 		this._needsRemoving.push(layer);
-			}
-			return this;
-		}
+		// if(!this._map) {
+		// 	if(!this._arraySplice(this._needsClustering, layer) && this.hasLayer(layer))
+		// 	{
+		// // 		this._needsRemoving.push(layer);
+		// 	}
+		// 	return this;
+		// }
 		
 		if(!layer.__parent){ return this; }
 		
@@ -302,7 +269,7 @@
 	
 	MAP.MarkerClusterGroup.prototype.addLayers = function(layersArray)
 	{
-		var	newMarkers, i, l, m, markers
+		var	newMarkers, i, l, m, markers, length
 		,	fg				= this._featureGroup
 		// 	npg = this._nonPointGroup,
 		,	chunked			= this.options.chunkedLoading
@@ -314,7 +281,8 @@
 		if(this._topClusterLevel)
 		{
 			// console.log('has map, layers: ' + layersArray.length);
-			var offset = 0, length = layersArray.length, started = (new Date()).getTime();
+			var offset = 0, started = (new Date()).getTime();
+			length = layersArray.length;
 			
 			var process = MAP.bind(function()
 			{
@@ -330,7 +298,6 @@
 					}
 					
 					m = layersArray[offset];
-					m._iconNeedsRecalc = true;
 					MAP.stamp(m);
 					
 					if(this.hasLayer(m)){ continue; }
@@ -371,12 +338,12 @@
 		else
 		{
 			newMarkers = [];
-			var length = this._needsClustering.length;
+			length = this._needsClustering.length;
 			
 			for(i = 0, l = layersArray.length; i < l; i++)
 			{
 				m = layersArray[i];
-				MAP.stamp(m)
+				MAP.stamp(m);
 				
 				if(this.hasLayer(m)){ continue; }
 				
@@ -489,6 +456,8 @@
 		,	gridUnclustered	= this._gridUnclustered
 		;
 		
+		
+		
 		// if(this.options.singleMarkerMode)
 		// {
 		// 	layer.options.icon = this.options.iconCreateFunction({
@@ -500,6 +469,8 @@
 		// 		}
 		// 	});
 		// }
+		
+		layer._iconNeedsRecalc = true;
 		
 		//Find the lowest zoom level to slot this one in
 		for(; zoom >= 0; zoom--)
@@ -602,8 +573,7 @@
 				gridUnclustered[cluster._zoom].addObject(otherMarker, this.ll2px(otherMarker, otherMarker.position, cluster._zoom));
 				
 				//Move otherMarker up to parent
-				// this._arraySplice(cluster.__parent._childClusters, cluster);
-				if((i = cluster.__parent._childClusters.indexOf(cluster)) > -1){ cluster.__parent._childClusters.splice(i, 1); }
+				Map.spliceIndexOf(cluster.__parent._childClusters, cluster);
 				cluster.__parent._markers_i[otherMarker.__stamp_id] = cluster.__parent._markers.push(otherMarker) - 1;
 				otherMarker.__parent = cluster.__parent;
 				
