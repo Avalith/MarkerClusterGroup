@@ -72,20 +72,40 @@ MAP.spliceIndexOf = function(array, elem)
 	}
 };
 
+MAP.in_array = function(array, elem)
+{
+	for(var i = 0, l = array.length; i < l; i++)
+	{
+		if(array[i] === elem)
+		{
+			return i;
+		}
+	}
+	
+	return -1;
+};
+
 MAP.FeatureGroup = function()
 {
 	this.map = null;
 	this.layers = [];
 	this.addLayer = function(layer)
 	{
-		if(!this.map){ return; }
+		if(!this.map || this.has_layer(layer)){ return; }
 		
 		this.layers.push(layer);
 		layer.setMap(this.map);
 	};
 	
+	this.has_layer = function(layer)
+	{
+		return MAP.in_array(this.layers, layer) > -1;
+	};
+	
 	this.removeLayer = function(layer)
 	{
+		if(this.layers.length === 0){ return; }
+		
 		layer.setMap(null);
 		MAP.spliceIndexOf(this.layers, layer);
 	};
