@@ -209,7 +209,7 @@
 		,	zoom			= this._zoom
 		;
 		
-		if(zoomLevelToStart < zoom) //Still going down to required depth, just recurse to child clusters
+		if(zoomLevelToStart > zoom) //Still going down to required depth, just recurse to child clusters
 		{
 			for(i = childClusters.length - 1; i >= 0; i--)
 			{
