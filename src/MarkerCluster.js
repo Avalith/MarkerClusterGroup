@@ -311,7 +311,7 @@
 			clusters[i]._recalculateBounds();
 		}
 		
-		if(this === this._group._topClusterLevel){ return; }
+		// if(this === this._group._topClusterLevel){ return; }
 		
 		
 		var x, sw, ne, leftover
@@ -381,12 +381,21 @@
 		
 		if(avg_cnt)
 		{
-			leftover = all_cnt - avg_cnt;
-			this.position = new GM.LatLng
-			(
-				(this.position.lat() * leftover + avg_lat) / all_cnt,
-				(this.position.lng() * leftover + avg_lng) / all_cnt
-			);
+			
+			if(this.position)
+			{
+				leftover = all_cnt - avg_cnt;
+				
+				this.position = new GM.LatLng
+				(
+					(this.position.lat() * leftover + avg_lat) / all_cnt,
+					(this.position.lng() * leftover + avg_lng) / all_cnt
+				);
+			}
+			else
+			{
+				this.position = new GM.LatLng(avg_lat/all_cnt, avg_lng/all_cnt);
+			}
 		}
 	};
 	

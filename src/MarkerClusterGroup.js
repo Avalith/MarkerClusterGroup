@@ -769,6 +769,11 @@
 		return fingerprint.join();
 	};
 	
+	MAP.MarkerClusterGroup.prototype.fit = function()
+	{
+		this.map.fitBounds(this._topClusterLevel._bounds);
+	};
+	
 	
 	// ======= Animations Functions ======
 	
