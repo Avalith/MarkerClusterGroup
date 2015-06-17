@@ -20,7 +20,7 @@
 		this._iconNeedsUpdate	= true;
 		this._iconNeedsRecalc	= true;
 		
-		this._bounds			= new GM.LatLngBounds();
+		this._bounds			= null;
 		
 		this._div				= null;
 		this._div_count			= null;
@@ -313,6 +313,7 @@
 		
 		if(this === this._group._topClusterLevel){ return; }
 		
+		
 		var x, sw, ne, leftover
 		,	m		= this.position || (markers[0] || clusters[0]).position
 		,	min_lat = m.lat()
@@ -342,7 +343,6 @@
 			if(x < min_lng){ min_lng = x; } else if(x > max_lng){ max_lng = x; }
 		}
 		
-		
 		for(i = clusters.length - 1; i >= 0; i--)
 		{
 			m = clusters[i];
@@ -362,20 +362,26 @@
 			x = ne.lng(); if(x > max_lng){ max_lng = x; }
 		}
 		
-		// this._bounds = new GM.LatLngBounds(new GM.LatLng(min_lat, min_lng), new GM.LatLng(max_lat, max_lng));
-		sw = this._bounds.getSouthWest();
-		ne = this._bounds.getNorthEast();
+		if(this._bounds)
+		{
+			sw = this._bounds.getSouthWest();
+			ne = this._bounds.getNorthEast();
+			
+			min_lat = Math.min(sw.lat(), min_lat);
+			min_lng = Math.min(sw.lng(), min_lng);
+			max_lat = Math.max(ne.lat(), max_lat);
+			max_lng = Math.max(ne.lng(), max_lng);
+		}
+		
 		this._bounds = new GM.LatLngBounds
 		(
-			new GM.LatLng( Math.min(sw.lat(), min_lat), Math.min(sw.lng(), min_lng) ),
-			new GM.LatLng( Math.max(ne.lat(), max_lat), Math.max(ne.lng(), max_lng) )
+			new GM.LatLng(min_lat, min_lng),
+			new GM.LatLng(max_lat, max_lng)
 		);
 		
 		if(avg_cnt)
 		{
 			leftover = all_cnt - avg_cnt;
-			
-			// console.log((this.position.lat() * leftover + avg_lat)/all_cnt);
 			this.position = new GM.LatLng
 			(
 				(this.position.lat() * leftover + avg_lat) / all_cnt,
@@ -383,7 +389,6 @@
 			);
 		}
 	};
-	
 	
 	
 	
@@ -410,6 +415,9 @@
 		{
 			cluster.zoomToBounds();
 		}
+		// console.log(cluster);
+		// var sw = cluster._bounds.getSouthWest(), ne = cluster._bounds.getNorthEast(), path = [ne, new GM.LatLng(sw.lat(), ne.lng()), sw, new GM.LatLng(ne.lat(), sw.lng()), ne];
+		// new GM.Polygon({ map: map, path: path });
 		
 		// Focus the map again for keyboard users.
 		// if (e.originalEvent && e.originalEvent.keyCode === 13) {
