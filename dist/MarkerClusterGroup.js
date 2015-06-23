@@ -78,20 +78,40 @@ MAP.spliceIndexOf = function(array, elem)
 	}
 };
 
+MAP.in_array = function(array, elem)
+{
+	for(var i = 0, l = array.length; i < l; i++)
+	{
+		if(array[i] === elem)
+		{
+			return i;
+		}
+	}
+	
+	return -1;
+};
+
 MAP.FeatureGroup = function()
 {
 	this.map = null;
 	this.layers = [];
 	this.addLayer = function(layer)
 	{
-		if(!this.map){ return; }
+		if(!this.map || this.has_layer(layer)){ return; }
 		
 		this.layers.push(layer);
 		layer.setMap(this.map);
 	};
 	
+	this.has_layer = function(layer)
+	{
+		return MAP.in_array(this.layers, layer) > -1;
+	};
+	
 	this.removeLayer = function(layer)
 	{
+		if(this.layers.length === 0){ return; }
+		
 		layer.setMap(null);
 		MAP.spliceIndexOf(this.layers, layer);
 	};
@@ -222,7 +242,6 @@ MAP.FeatureGroup = function()
 		// Remember the current zoom level and bounds
 		this._zoom = this.map.getZoom();
 		this._currentShownBounds = this._getExpandedVisibleBounds();
-		
 		// TODO: move this in spiderify.js with bind and call 
 		if(this._spiderfierOnAdd){ this._spiderfierOnAdd(); }
 		
@@ -315,7 +334,7 @@ MAP.FeatureGroup = function()
 	
 	MAP.MarkerClusterGroup.prototype.removeLayer = function(layer)
 	{
-		console.log(1);
+		console.log('remove layer');
 		
 		return;
 		// if (layer instanceof L.LayerGroup)
@@ -366,7 +385,7 @@ MAP.FeatureGroup = function()
 		if(this._featureGroup.hasLayer(layer))
 		{
 			this._featureGroup.removeLayer(layer);
-			if(layer.setOpacity){ layer.setOpacity(1); }
+			// if(layer.setOpacity){ layer.setOpacity(1); }
 		}
 		
 		return this;
@@ -391,7 +410,7 @@ MAP.FeatureGroup = function()
 		{
 			// console.log('has map, layers: ' + layersArray.length);
 			var offset = 0, started = (new Date()).getTime();
-			length = layersArray.length;
+			if(!(length = layersArray.length)){ return; }
 			
 			var process = MAP.bind(function()
 			{
@@ -429,10 +448,7 @@ MAP.FeatureGroup = function()
 					this._topClusterLevel._recursivelyAddChildrenToMap(null, this._zoom, this._currentShownBounds);
 					
 					// Update the icons of all those visible clusters that were affected
-					fg.eachLayer(function(c)
-					{
-						if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); }
-					});
+					fg.eachLayer(function(c){ if(c._is_cluster && c._iconNeedsUpdate){ c._updateIcon(); } });
 					
 					// TODO Trigger Done Event
 				}
@@ -712,8 +728,8 @@ MAP.FeatureGroup = function()
 	{
 		var _this = this;
 		
-		GE.addListener(this.map, 'zoom_changed', function(){ _this._zoomEnd(); });
-		// GE.addListener(this.map, 'dragend', function(){ _this._moveEnd(); });
+		GE.addListener(this.map, 'zoom_changed'	, function(){ _this._zoomEnd(); });
+		GE.addListener(this.map, 'dragend'		, function(){ _this._moveEnd(); });
 		// this._map.on('moveend', this._moveEnd, this);
 		
 		// var map = this.map,
@@ -882,6 +898,11 @@ MAP.FeatureGroup = function()
 		return fingerprint.join();
 	};
 	
+	MAP.MarkerClusterGroup.prototype.fit = function()
+	{
+		this.map.fitBounds(this._topClusterLevel._bounds);
+	};
+	
 	
 	// ======= Animations Functions ======
 	
@@ -952,7 +973,7 @@ MAP.FeatureGroup = function()
 				else
 				{
 					//Fade out old cluster
-					c.setOpacity(0);
+					// c.setOpacity(0);
 					c._recursivelyAddChildrenToMap(startPos, newZoomLevel, bounds);
 				}
 				
@@ -974,7 +995,7 @@ MAP.FeatureGroup = function()
 			// TODO Maybe? Update markers in _recursivelyBecomeVisible
 			fg.eachLayer(function(n)
 			{
-				if(!n._is_cluster && n.map){ n.setOpacity(1); }
+				// if(!n._is_cluster && n.map){ n.setOpacity(1); }
 			});
 			
 			// update the positions of the just added clusters/markers
@@ -989,7 +1010,7 @@ MAP.FeatureGroup = function()
 				//update the positions of the just added clusters/markers
 				this._topClusterLevel._recursively(bounds, previousZoomLevel, 0, function(c)
 				{
-					c.setOpacity(1);
+					// c.setOpacity(1);
 					fg.removeLayer(c);
 				});
 				
@@ -1028,7 +1049,7 @@ MAP.FeatureGroup = function()
 					var m = cluster._markers[0];
 					//If we were in a cluster animation at the time then the opacity and position of our child could be wrong now, so fix it
 					m.setPosition(m.position);
-					if (m.setOpacity){ m.setOpacity(1); }
+					// if (m.setOpacity){ m.setOpacity(1); }
 				}
 				else
 				{
@@ -1053,12 +1074,12 @@ MAP.FeatureGroup = function()
 					this._animationStart();
 					
 					layer.setPosition(this.getProjection().fromLatLngToDivPixel(newCluster.position));
-					layer.setOpacity(0);
+					// layer.setOpacity(0);
 					
 					this._enqueue(function()
 					{
 						fg.removeLayer(layer);
-						layer.setOpacity(1);
+						// layer.setOpacity(1);
 						me._animationEnd();
 					});
 				}
@@ -1140,12 +1161,12 @@ MAP.FeatureGroup = function()
 		this._iconNeedsUpdate	= true;
 		this._iconNeedsRecalc	= true;
 		
-		this._bounds			= new GM.LatLngBounds();
+		this._bounds			= null;
 		
 		this._div				= null;
 		this._div_count			= null;
 		
-		if(a){ this._addChild(a); this.setPosition(this._cPosition = this._wPosition = a.position); }
+		if(a){ this._addChild(a); this._cPosition = this.position = a.position; }
 		if(b){ this._addChild(b); }
 	};
 	
@@ -1271,7 +1292,7 @@ MAP.FeatureGroup = function()
 					nm._backupPosition = nm.position;
 					
 					nm.setPosition(startPos);
-					if(nm.setOpacity){ nm.setOpacity(0); }
+					// if(nm.setOpacity){ nm.setOpacity(0); }
 				}
 				
 				c._group._featureGroup.addLayer(nm);
@@ -1295,7 +1316,7 @@ MAP.FeatureGroup = function()
 					if(!exceptBounds || !exceptBounds.contains(m.position))
 					{
 						c._group._featureGroup.removeLayer(m);
-						if(m.setOpacity){ m.setOpacity(1); }
+						// if(m.setOpacity){ m.setOpacity(1); }
 					}
 				}
 			},
@@ -1308,7 +1329,7 @@ MAP.FeatureGroup = function()
 					if(!exceptBounds || !exceptBounds.contains(m.position))
 					{
 						c._group._featureGroup.removeLayer(m);
-						if(m.setOpacity){ m.setOpacity(1); }
+						// if(m.setOpacity){ m.setOpacity(1); }
 					}
 				}
 			}
@@ -1342,15 +1363,8 @@ MAP.FeatureGroup = function()
 		}
 		else //In required depth
 		{
-			if(runAtEveryLevel)
-			{
-				runAtEveryLevel(this);
-			}
-			
-			if(runAtBottomLevel && this._zoom === zoomLevelToStop)
-			{
-				runAtBottomLevel(this);
-			}
+			if(runAtEveryLevel){ runAtEveryLevel(this); }
+			if(runAtBottomLevel && this._zoom === zoomLevelToStop){ runAtBottomLevel(this); }
 			
 			//TODO: This loop is the same as above
 			if(zoomLevelToStop > zoom)
@@ -1372,7 +1386,7 @@ MAP.FeatureGroup = function()
 		if(startPos)
 		{
 			this._backupPosition = this.position;
-			this.setPosition(startPos);
+			// this.setPosition(startPos);
 		}
 		
 		// this.setMap(this._group.map)
@@ -1386,7 +1400,7 @@ MAP.FeatureGroup = function()
 	//Expand our bounds and tell our parent to
 	// MAP.MarkerCluster.prototype._expandBounds = function(marker)
 	// {
-	// 	var lat, lng, addedCount, addedPosition = marker._wPosition || marker.position;
+	// 	var lat, lng, addedCount, addedPosition = marker.position;
 		
 	// 	// console.log(marker, addedPosition);
 	// 	if(marker._is_cluster)
@@ -1412,15 +1426,15 @@ MAP.FeatureGroup = function()
 	// 	var totalCount = this._childCount + addedCount;
 		
 	// 	//Calculate weighted latlng for display
-	// 	if(this._wPosition)
+	// 	if(this.position)
 	// 	{
-	// 		lat = (addedPosition.lat() * addedCount + this._wPosition.lat() * this._childCount) / totalCount;
-	// 		lng = (addedPosition.lng() * addedCount + this._wPosition.lng() * this._childCount) / totalCount;
+	// 		lat = (addedPosition.lat() * addedCount + this.position.lat() * this._childCount) / totalCount;
+	// 		lng = (addedPosition.lng() * addedCount + this.position.lng() * this._childCount) / totalCount;
 			
 	// 		addedPosition = new GM.LatLng(lat, lng);
 	// 	}
 		
-	// 	this.setPosition(this._wPosition = addedPosition);
+	// 	this.setPosition(this.position = addedPosition);
 	// };
 	
 	MAP.MarkerCluster.prototype._recalculateBounds = function()
@@ -1438,10 +1452,11 @@ MAP.FeatureGroup = function()
 			clusters[i]._recalculateBounds();
 		}
 		
-		if(this === this._group._topClusterLevel){ return; }
+		// if(this === this._group._topClusterLevel){ return; }
+		
 		
 		var x, sw, ne, leftover
-		,	m		= this._wPosition || (markers[0] || clusters[0]).position
+		,	m		= this.position || (markers[0] || clusters[0]).position
 		,	min_lat = m.lat()
 		,	min_lng = m.lng()
 		,	max_lat = m.lat()
@@ -1451,8 +1466,6 @@ MAP.FeatureGroup = function()
 		,	all_cnt = markers.length + clusters.length
 		,	avg_cnt = all_cnt
 		;
-		
-		// this._cPosition = this._wPosition = m;
 		
 		for(i = markers.length - 1; i >= 0; i--)
 		{
@@ -1471,14 +1484,13 @@ MAP.FeatureGroup = function()
 			if(x < min_lng){ min_lng = x; } else if(x > max_lng){ max_lng = x; }
 		}
 		
-		
 		for(i = clusters.length - 1; i >= 0; i--)
 		{
 			m = clusters[i];
 			
 			if(!m._iconNeedsRecalc){ avg_cnt--; continue; } m._iconNeedsRecalc = false;
 			
-			x = m._wPosition;
+			x = m.position;
 			avg_lat += x.lat();
 			avg_lng += x.lng();
 			
@@ -1491,28 +1503,42 @@ MAP.FeatureGroup = function()
 			x = ne.lng(); if(x > max_lng){ max_lng = x; }
 		}
 		
-		// this._bounds = new GM.LatLngBounds(new GM.LatLng(min_lat, min_lng), new GM.LatLng(max_lat, max_lng));
-		sw = this._bounds.getSouthWest();
-		ne = this._bounds.getNorthEast();
+		if(this._bounds)
+		{
+			sw = this._bounds.getSouthWest();
+			ne = this._bounds.getNorthEast();
+			
+			min_lat = Math.min(sw.lat(), min_lat);
+			min_lng = Math.min(sw.lng(), min_lng);
+			max_lat = Math.max(ne.lat(), max_lat);
+			max_lng = Math.max(ne.lng(), max_lng);
+		}
+		
 		this._bounds = new GM.LatLngBounds
 		(
-			new GM.LatLng( Math.min(sw.lat(), min_lat), Math.min(sw.lng(), min_lng) ),
-			new GM.LatLng( Math.max(ne.lat(), max_lat), Math.max(ne.lng(), max_lng) )
+			new GM.LatLng(min_lat, min_lng),
+			new GM.LatLng(max_lat, max_lng)
 		);
 		
 		if(avg_cnt)
 		{
-			leftover = all_cnt - avg_cnt;
 			
-			// console.log((this._wPosition.lat() * leftover + avg_lat)/all_cnt);
-			this.setPosition(this._wPosition = new GM.LatLng
-			(
-				(this._wPosition.lat() * leftover + avg_lat) / all_cnt,
-				(this._wPosition.lng() * leftover + avg_lng) / all_cnt
-			));
+			if(this.position)
+			{
+				leftover = all_cnt - avg_cnt;
+				
+				this.position = new GM.LatLng
+				(
+					(this.position.lat() * leftover + avg_lat) / all_cnt,
+					(this.position.lng() * leftover + avg_lng) / all_cnt
+				);
+			}
+			else
+			{
+				this.position = new GM.LatLng(avg_lat/all_cnt, avg_lng/all_cnt);
+			}
 		}
 	};
-	
 	
 	
 	
@@ -1539,6 +1565,9 @@ MAP.FeatureGroup = function()
 		{
 			cluster.zoomToBounds();
 		}
+		// console.log(cluster);
+		// var sw = cluster._bounds.getSouthWest(), ne = cluster._bounds.getNorthEast(), path = [ne, new GM.LatLng(sw.lat(), ne.lng()), sw, new GM.LatLng(ne.lat(), sw.lng()), ne];
+		// new GM.Polygon({ map: map, path: path });
 		
 		// Focus the map again for keyboard users.
 		// if (e.originalEvent && e.originalEvent.keyCode === 13) {
@@ -1569,11 +1598,11 @@ MAP.FeatureGroup = function()
 		
 		// if(boundsZoom > zoom)
 		// {
-		// 	this._group._map.setView(this._position, zoom);
+		// 	this._group._map.setView(this.position, zoom);
 		// }
 		// else if(boundsZoom <= mapZoom) //If fitBounds wouldn't zoom us down, zoom us down instead
 		// {
-		// 	this._group._map.setView(this._position, mapZoom + 1);
+		// 	this._group._map.setView(this.position, mapZoom + 1);
 		// }
 		// else
 		// {
@@ -1588,15 +1617,18 @@ MAP.FeatureGroup = function()
 		this._div.className = 'cluster cluster-size-' + ('' + this._childCount).length;
 		this._div_count.innerHTML = this._childCount;
 		
+		this.setPosition(this.position);
+		
 		this._iconNeedsUpdate = false;
+		
 	};
 	
-	MAP.MarkerCluster.prototype.setOpacity = function(o)
-	{
-		if(!this._div){ return null; }
+	// MAP.MarkerCluster.prototype.setOpacity = function(o)
+	// {
+	// 	if(!this._div){ return null; }
 		
-		this._div.style.opacity = o;
-	};
+	// 	this._div.style.opacity = o;
+	// };
 	
 	if(MAP.TRANSITIONS)
 	{
@@ -1619,11 +1651,11 @@ MAP.FeatureGroup = function()
 				if(c._isSingleParent() && previousZoomLevel - 1 === newZoomLevel)
 				{
 					c._recursivelyRemoveChildrenFromMap(bounds, previousZoomLevel); //Immediately remove our children as we are replacing them. TODO previousBounds not bounds
-					c.setOpacity(1);
+					// c.setOpacity(1);
 				}
 				else
 				{
-					c.setOpacity(0);
+					// c.setOpacity(0);
 				}
 				
 				// console.log(c);
@@ -1646,7 +1678,7 @@ MAP.FeatureGroup = function()
 						if(m.map)
 						{
 							m.setPosition(center);
-							m.setOpacity(0);
+							// m.setOpacity(0);
 						}
 					}
 				},
@@ -1660,7 +1692,7 @@ MAP.FeatureGroup = function()
 						if(cm.map)
 						{
 							cm.setPosition(center);
-							cm.setOpacity(0);
+							// cm.setOpacity(0);
 						}
 					}
 				}
@@ -1669,7 +1701,7 @@ MAP.FeatureGroup = function()
 		
 		MAP.MarkerCluster.prototype._recursivelyBecomeVisible = function(bounds, zoomLevel)
 		{
-			this._recursively(bounds, 0, zoomLevel, null, function(c){ c.setOpacity(1); });
+			// this._recursively(bounds, 0, zoomLevel, null, function(c){ c.setOpacity(1); });
 		};
 		
 		MAP.MarkerCluster.prototype._recursivelyRestoreChildPositions = function(zoomLevel)
