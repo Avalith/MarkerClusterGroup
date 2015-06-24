@@ -404,6 +404,7 @@
 	MAP.MarkerClusterGroup.prototype.clearLayers = function()
 	{
 		//If we aren't on the map (yet), blow away the markers we know of
+		
 		if(!this.map)
 		{
 			this._needsClustering = [];
@@ -413,10 +414,7 @@
 			delete this._gridUnclustered;
 		}
 		
-		if(this._noanimationUnspiderfy)
-		{
-			this._noanimationUnspiderfy();
-		}
+		if(this._noanimationUnspiderfy){ this._noanimationUnspiderfy(); }
 		
 		//Remove all the visible layers
 		this._featureGroup.clearLayers();
@@ -432,13 +430,11 @@
 			}
 		}
 		
-		if(this.map)
+		if(this.map && this._topClusterLevel)
 		{
-			//Reset _topClusterLevel and the DistanceGrids
+			// Reset _topClusterLevel and the DistanceGrids
 			this._generateInitialClusters();
 		}
-		
-		// return this;
 	};
 	
 	
