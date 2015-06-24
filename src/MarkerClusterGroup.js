@@ -673,6 +673,8 @@
 	{
 		// if(!this.options.removeOutsideVisibleBounds){ return this.map.getBounds(); }
 		
+		if(this.map.zoom < 4){ return new GM.LatLngBounds(new GM.LatLng(-90, -180), new GM.LatLng(90, 180)); }
+		
 		var	bounds	= this.map.getBounds()
 		,	sw		= bounds.getSouthWest()
 		,	ne		= bounds.getNorthEast()
@@ -680,7 +682,7 @@
 		,	lngDiff	= Math.abs(sw.lng() - ne.lng()) // L.Browser.mobile ? 0 : Math.abs(sw.lng - ne.lng)
 		;
 		
-		return new GM.LatLngBounds(new GM.LatLng(sw.lat() - latDiff, sw.lng() - lngDiff, true), new GM.LatLng(ne.lat() + latDiff, ne.lng() + lngDiff, true));
+		return new GM.LatLngBounds(new GM.LatLng(sw.lat() - latDiff, sw.lng() - lngDiff), new GM.LatLng(ne.lat() + latDiff, ne.lng() + lngDiff));
 	};
 	
 	MAP.MarkerClusterGroup.prototype._generateInitialClusters = function()
