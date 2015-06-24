@@ -802,6 +802,8 @@ MAP.FeatureGroup = function()
 	{
 		// if(!this.options.removeOutsideVisibleBounds){ return this.map.getBounds(); }
 		
+		if(this.map.zoom < 4){ return new GM.LatLngBounds(new GM.LatLng(-90, -180), new GM.LatLng(90, 180)); }
+		
 		var	bounds	= this.map.getBounds()
 		,	sw		= bounds.getSouthWest()
 		,	ne		= bounds.getNorthEast()
@@ -809,7 +811,7 @@ MAP.FeatureGroup = function()
 		,	lngDiff	= Math.abs(sw.lng() - ne.lng()) // L.Browser.mobile ? 0 : Math.abs(sw.lng - ne.lng)
 		;
 		
-		return new GM.LatLngBounds(new GM.LatLng(sw.lat() - latDiff, sw.lng() - lngDiff, true), new GM.LatLng(ne.lat() + latDiff, ne.lng() + lngDiff, true));
+		return new GM.LatLngBounds(new GM.LatLng(sw.lat() - latDiff, sw.lng() - lngDiff), new GM.LatLng(ne.lat() + latDiff, ne.lng() + lngDiff));
 	};
 	
 	MAP.MarkerClusterGroup.prototype._generateInitialClusters = function()
@@ -1278,25 +1280,25 @@ MAP.FeatureGroup = function()
 	{
 		this._recursively(bounds, -1, zoomLevel, function(c)
 		{
-			if(zoomLevel === c._zoom){ return; }
+			// // this is not needed for now because there is no animation at the moment
+			// if(zoomLevel === c._zoom){ return; }
 			
-			//Add our child markers at startPos (so they can be animated out)
-			for(var nm, i = c._markers.length - 1; i >= 0; i--)
-			{
-				nm = c._markers[i];
+			// //Add our child markers at startPos (so they can be animated out)
+			// for(var nm, i = c._markers.length - 1; i >= 0; i--)
+			// {
+			// 	nm = c._markers[i];
 				
-				if(!bounds.contains(nm.position)){ continue; }
+			// 	if(!bounds.contains(nm.position)){ continue; }
 				
-				if(startPos)
-				{
-					nm._backupPosition = nm.position;
-					
-					nm.setPosition(startPos);
-					// if(nm.setOpacity){ nm.setOpacity(0); }
-				}
+			// 	if(startPos)
+			// 	{
+			// 		nm._backupPosition = nm.position;
+			// 		nm.setPosition(startPos);
+			// 		// if(nm.setOpacity){ nm.setOpacity(0); }
+			// 	}
 				
-				c._group._featureGroup.addLayer(nm);
-			}
+			// 	c._group._featureGroup.addLayer(nm);
+			// }
 		}, function(c){ c._addToMap(startPos); });
 	};
 	
@@ -1355,7 +1357,9 @@ MAP.FeatureGroup = function()
 			for(i = childClusters.length - 1; i >= 0; i--)
 			{
 				c = childClusters[i];
+				
 				if(boundsToApplyTo.intersects(c._bounds))
+				// if(boundsToApplyTo.contains(c.position))
 				{
 					c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
 				}
@@ -1363,6 +1367,7 @@ MAP.FeatureGroup = function()
 		}
 		else //In required depth
 		{
+			
 			if(runAtEveryLevel){ runAtEveryLevel(this); }
 			if(runAtBottomLevel && this._zoom === zoomLevelToStop){ runAtBottomLevel(this); }
 			
@@ -1373,6 +1378,7 @@ MAP.FeatureGroup = function()
 				{
 					c = childClusters[i];
 					if(boundsToApplyTo.intersects(c._bounds))
+					// if(boundsToApplyTo.contains(c.position))
 					{
 						c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
 					}
@@ -1391,6 +1397,7 @@ MAP.FeatureGroup = function()
 		
 		// this.setMap(this._group.map)
 		// console.log(this._group.map);
+		
 		this._group._featureGroup.addLayer(this);
 	};
 	
