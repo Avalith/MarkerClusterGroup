@@ -671,6 +671,7 @@
 	// Gets the maps visible bounds expanded in each direction by the size of the screen (so the user cannot see an area we do not cover in one pan)
 	MAP.MarkerClusterGroup.prototype._getExpandedVisibleBounds = function()
 	{
+		// return this.map.getBounds();
 		// if(!this.options.removeOutsideVisibleBounds){ return this.map.getBounds(); }
 		
 		if(this.map.zoom < 4){ return new GM.LatLngBounds(new GM.LatLng(-90, -180), new GM.LatLng(90, 180)); }
@@ -678,11 +679,11 @@
 		var	bounds	= this.map.getBounds()
 		,	sw		= bounds.getSouthWest()
 		,	ne		= bounds.getNorthEast()
-		,	latDiff	= Math.abs(sw.lat() - ne.lat()) // L.Browser.mobile ? 0 : Math.abs(sw.lat - ne.lat)
-		,	lngDiff	= Math.abs(sw.lng() - ne.lng()) // L.Browser.mobile ? 0 : Math.abs(sw.lng - ne.lng)
+		,	latDiff	= Math.abs(sw.lat() - ne.lat())
+		,	lngDiff	= lngDiff = sw.lng() < ne.lng() ? ne.lng() - sw.lng() : (180 - sw.lng()) + (180 + ne.lng());
 		;
 		
-		return new GM.LatLngBounds(new GM.LatLng(sw.lat() - latDiff, sw.lng() - lngDiff), new GM.LatLng(ne.lat() + latDiff, ne.lng() + lngDiff));
+		return new GM.LatLngBounds(new GM.LatLng(sw.lat() - latDiff, (lngDiff > 180 ? -180 : sw.lng() - lngDiff)), new GM.LatLng(ne.lat() + latDiff, (lngDiff > 180 ? 180 : ne.lng() + lngDiff)));
 	};
 	
 	MAP.MarkerClusterGroup.prototype._generateInitialClusters = function()
@@ -738,7 +739,6 @@
 		}
 		else
 		{
-			console.log('TODO move end?');
 			this._moveEnd();
 		}
 	};

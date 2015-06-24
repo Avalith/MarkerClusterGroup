@@ -215,8 +215,8 @@
 			{
 				c = childClusters[i];
 				
-				if(boundsToApplyTo.intersects(c._bounds))
-				// if(boundsToApplyTo.contains(c.position))
+				// if(boundsToApplyTo.intersects(c._bounds))
+				if(boundsToApplyTo.contains(c.position))
 				{
 					c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
 				}
@@ -234,8 +234,8 @@
 				for(i = childClusters.length - 1; i >= 0; i--)
 				{
 					c = childClusters[i];
-					if(boundsToApplyTo.intersects(c._bounds))
-					// if(boundsToApplyTo.contains(c.position))
+					// if(boundsToApplyTo.intersects(c._bounds))
+					if(boundsToApplyTo.contains(c.position))
 					{
 						c._recursively(boundsToApplyTo, zoomLevelToStart, zoomLevelToStop, runAtEveryLevel, runAtBottomLevel);
 					}
