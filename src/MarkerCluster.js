@@ -137,25 +137,25 @@
 	{
 		this._recursively(bounds, -1, zoomLevel, function(c)
 		{
-			// // this is not needed for now because there is no animation at the moment
-			// if(zoomLevel === c._zoom){ return; }
+			// this is not needed for now because there is no animation at the moment
+			if(zoomLevel === c._zoom){ return; }
 			
-			// //Add our child markers at startPos (so they can be animated out)
-			// for(var nm, i = c._markers.length - 1; i >= 0; i--)
-			// {
-			// 	nm = c._markers[i];
+			//Add our child markers at startPos (so they can be animated out)
+			for(var nm, i = c._markers.length - 1; i >= 0; i--)
+			{
+				nm = c._markers[i];
 				
-			// 	if(!bounds.contains(nm.position)){ continue; }
+				if(!bounds.contains(nm.position)){ continue; }
 				
-			// 	if(startPos)
-			// 	{
-			// 		nm._backupPosition = nm.position;
-			// 		nm.setPosition(startPos);
-			// 		// if(nm.setOpacity){ nm.setOpacity(0); }
-			// 	}
+				if(startPos)
+				{
+					nm._backupPosition = nm.position;
+					nm.setPosition(startPos);
+					// if(nm.setOpacity){ nm.setOpacity(0); }
+				}
 				
-			// 	c._group._featureGroup.addLayer(nm);
-			// }
+				c._group._featureGroup.addLayer(nm);
+			}
 		}, function(c){ c._addToMap(startPos); });
 	};
 	
