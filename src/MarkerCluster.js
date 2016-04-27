@@ -74,7 +74,11 @@
 			
 			this._updateIcon();
 			
-			GE.addDomListener(div, 'click', this._zoomOrSpiderfy);
+			var _this = this;
+			GE.addDomListener(div, 'click', function(event) {
+				_this._group.emit('clusterclick', event, _this._group);
+				_this._zoomOrSpiderfy.call(div, event);
+			});
 		}
 		
 		this.getPanes().overlayMouseTarget.appendChild(this._div);
@@ -412,7 +416,8 @@
 	{
 		var	cluster	= this._cluster
 		,	map		= cluster.map
-		,	options	= cluster._group.options;
+		,	group	= cluster._group
+		,	options	= group.options;
 		// console.log(map.getZoom() === map.getMaxZoom());
 		
 		/*if(this._bounds._northEast.equals(e.layer._bounds._southWest))
@@ -423,11 +428,16 @@
 		} 
 		else*/ if(map.getZoom() === (map.maxZoom || 21))
 		{
-			if(options.spiderfyOnMaxZoom){ cluster.spiderfy(); }
+			if(options.spiderfyOnMaxZoom)
+			{ 
+				cluster.spiderfy(); 
+				group.emit('spiderfy', ev, cluster);
+			}
 		}
 		else if(options.zoomToBoundsOnClick)
 		{
 			cluster.zoomToBounds();
+			group.emit('zoomtobounds', ev, cluster);
 		}
 		// console.log(cluster);
 		// var sw = cluster._bounds.getSouthWest(), ne = cluster._bounds.getNorthEast(), path = [ne, new GM.LatLng(sw.lat(), ne.lng()), sw, new GM.LatLng(ne.lat(), sw.lng()), ne];

@@ -27,6 +27,22 @@ clusterer.addLayer(new google.maps.Marker({ position: new google.maps.LatLng(42.
 clusterer.setMap(gmap);
 ```
 
+### Events
+
+```javascript
+clusterer.on('clusterclick', function(event, group){  
+	// your code
+});
+
+// remove all events
+clusterer.off('clusterclick'); // or clusterer.off('clusterclick', callback);
+
+// fire an event 
+clusterer.emit('clusterclick'); 
+```
+
+Additionaly there are the 'spiderfy' and 'zoomtobounds' events.
+
 ### Examples Usage
 
 The [realworld example](http://avalith.github.io/MarkerClusterGroup/examples/marker-clustering-realworld.388.html) is a good place to start, it uses all of the defaults of the clusterer.

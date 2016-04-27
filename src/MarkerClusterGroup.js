@@ -772,6 +772,50 @@
 		this.map.fitBounds(this._topClusterLevel._bounds);
 	};
 	
+	MAP.MarkerClusterGroup.prototype.on = function(name, callback)
+	{
+		if (!this.__events) this.__events = {};
+		
+		var events = this.__events;
+		if (!events[name]) events[name] = [];
+		
+		events[name].push(callback);
+	};
+	
+	MAP.MarkerClusterGroup.prototype.off = function(name, callback)
+	{
+		var events = this.__events;
+		if (!events) return;
+		if (!events[name]) return;
+		
+		if (!callback)
+		{
+			delete events[name];
+			return;
+		}
+		
+		var list = events[name],
+			index = list.indexOf(callback);
+		if (index < 0) return;
+		
+		list.splice(index, 1);
+	};
+	
+	MAP.MarkerClusterGroup.prototype.emit = function()
+	{
+		var events = this.__events;
+		if (!events) return;
+		
+		var args = Array.prototype.slice.call(arguments),
+			name = args.shift();
+		if (!events[name]) return;
+		
+		var list = events[name];
+		for (var i = 0, l = list.length; i < l; i++)
+		{
+			list[i].apply(this, args);
+		}
+	};
 	
 	// ======= Animations Functions ======
 	
